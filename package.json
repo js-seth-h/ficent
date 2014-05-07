@@ -1,8 +1,8 @@
 {
   "name": "handover",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "description": "handover",
-  "main": "index.js",
+  "main": "handover.coffee",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
