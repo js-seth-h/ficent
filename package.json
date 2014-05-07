@@ -1,0 +1,28 @@
+{
+  "name": "handover",
+  "version": "0.0.0",
+  "description": "handover",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/js-seth-h/handover.git"
+  },
+  "keywords": [
+    "web",
+    "connect",
+    "middleware",
+    "flow",
+    "rack",
+    "async",
+    "next"
+  ],
+  "author": "js.seth.h@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/js-seth-h/handover/issues"
+  },
+  "homepage": "https://github.com/js-seth-h/handover"
+}
