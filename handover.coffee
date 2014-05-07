@@ -1,8 +1,11 @@
 util = require 'util'
-# debug =  require('debug')('handover')
+debug =  require('debug')('handover')
 
 runHandover = (req, res, hands, outNext)-> 
+  # req.__handover = 'req'
+  # res.__handover = 'res'
   res.data = res.data || {}
+  # debug 'res.data', res.data
   cnt = 0 
 
   indexOfErrorHandler = (hands)->
@@ -15,13 +18,15 @@ runHandover = (req, res, hands, outNext)->
     return -1
 
   mkParallel = (hands)->
-    return (res, req, next)->
-      
+    return (req, res, next)->
+
+      # debug 'in Parallel  __handover = ', req.__handover, res.__handover, res.data
       endstate = new Array()
       result = new Array()
 
       hands.forEach (task, index)->
         endstate[index] = false
+        # debug 'each Parallel  __handover = ', req.__handover, res.__handover, res.data
         task req, res, (err)->
           result[index] = err
           endstate[index] =  true
