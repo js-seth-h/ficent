@@ -4,9 +4,17 @@ debug =  require('debug')('handover')
 runHandover = (req, res, hands, outNext)-> 
   # req.__handover = 'req'
   # res.__handover = 'res'
+  req.tmp = req.tmp || {}
+  res.tmp = res.tmp || {}
   res.data = res.data || {}
   # debug 'res.data', res.data
   cnt = 0 
+
+  callOutNext = (err)->
+    if outNext
+      return outNext(err)
+    if err 
+      throw new Error ("Error : No Error Handler, inside Error = " + err?.toString?() )
 
   indexOfErrorHandler = (hands)->
     inx = 0
@@ -42,11 +50,11 @@ runHandover = (req, res, hands, outNext)->
   mkNext = (next_hands)->
     return (err)-> 
 
-      return outNext err if next_hands is undefined
+      return callOutNext err if next_hands is undefined
       inx = 0
       inx = indexOfErrorHandler(next_hands) if err
       
-      return outNext(err) if not next_hands[inx]? 
+      return callOutNext(err) if not next_hands[inx]? 
 
       nextFn = next_hands[inx]
       leftFn = next_hands[inx + 1 ..]
