@@ -5,6 +5,8 @@ runHandover = (req, res, hands, outNext)->
   # req.__handover = 'req'
   # res.__handover = 'res'
   req.tmp = req.tmp || {}
+  req.data = req.data || {}
+  
   res.tmp = res.tmp || {}
   res.data = res.data || {}
   # debug 'res.data', res.data
