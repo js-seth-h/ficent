@@ -95,7 +95,7 @@ fnHandover = (hands, ctxArgs..., outCallback)->
       
   mkNext(hands)(null) 
 
-fnSIDM = (fn, inputs, outCallback)-> 
+runSIDM = (fn, inputs, outCallback)-> 
   endstate = new Array()
   result = new Array()
   inputs.forEach (input, index)->
@@ -147,7 +147,7 @@ handover = (hands)->
   fn = (args...)->
     fnHandover(hands, args...) 
   fn.parallel = (args...)->
-    fnSIDM(fn, args...)
+    runSIDM(fn, args...)
   fn.fnRetry = (tryLimit)->
     fnRetry(fn,tryLimit)
   return fn 
