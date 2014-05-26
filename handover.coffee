@@ -20,8 +20,8 @@ findHandByArity = (hands, arity)->
     inx++
   return -1
 
-mkForkJoin = (handsToFork)->
-  debug 'mkForkJoin', handsToFork.length
+fnForkJoin = (handsToFork)->
+  debug 'fnForkJoin', handsToFork.length
   return (ctxArgs..., outCallback)->
     endstate = new Array()
     result = new Array()
@@ -83,7 +83,7 @@ fnHandover = (hands, ctxArgs..., outCallback)->
       handsOthers = next_hands[inx + 1 ..]
 
       if util.isArray handToRun 
-        handToRun = mkForkJoin handToRun
+        handToRun = fnForkJoin handToRun
 
 
       fnNext = mkNext(handsOthers)
@@ -145,11 +145,13 @@ fnRetry = (fn, tryLimit)->
 
 handover = (hands)-> 
   fn = (args...)->
-    fnHandover(hands, args...)
+    fnHandover(hands, args...) 
   fn.parallel = (args...)->
     fnSIDM(fn, args...)
-  fn.retry = (tryLimit)->
+  fn.fnRetry = (tryLimit)->
     fnRetry(fn,tryLimit)
   return fn 
+
+handover.fnForkJoin = fnForkJoin
 
 module.exports = exports = handover

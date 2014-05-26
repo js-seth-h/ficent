@@ -64,7 +64,7 @@ describe 'handover', ()->
 
       done()
 
-  it 'base parallel ', (done)-> 
+  it 'base fork join ', (done)-> 
 
     ctx = {}
     
@@ -134,7 +134,7 @@ describe 'handover', ()->
     f = ho [ func_mk_Err ]
 
     g = ho [
-      f.retry 3
+      f.fnRetry 3
     ]
     # f (req,res,next)
     debug 'RETRY'
@@ -157,7 +157,7 @@ describe 'handover', ()->
     f = ho [ func_mk_Err ]
 
     g = ho [
-      f.retry 5
+      f.fnRetry 5
     ]
     # f (req,res,next)
     g ctx, (err, ctx)->
