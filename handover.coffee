@@ -110,11 +110,22 @@ runSIDM = (fn, inputs, outCallback)->
 
   checkAllEnd =()->
     return unless endstate.indexOf(false) is -1  
+
+
+    debug 'errs = ', errs
+    # errors = undefined unless hasErr
+
     debug 'SIDM errors - ', errors
-    hasErr = errors.some (err)-> err 
-    errors = undefined unless hasErr
-    debug 'SIDM finished - ', hasErr, errors
-    outCallback(errors, inputs) 
+    errs = errors.filter (err)-> err 
+    error = undefined
+    if errs.length > 0
+      error = errs[0]
+      error.errors = errors
+    debug 'SIDM finished - ', error
+    outCallback(error, inputs) 
+
+
+
 
   inputs.forEach (args, index)->
     debug 'SIDM run  ', index

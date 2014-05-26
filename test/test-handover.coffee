@@ -10,7 +10,7 @@ func1 = (ctx, next)->
 func2 = (ctx, next)-> 
   ctx.b = true
   next()
-describe 'handover', ()->  
+describe 'handover', ()->   
   it 'base ', (done)-> 
 
     ctx = 
@@ -109,7 +109,7 @@ describe 'handover', ()->
     debug 'RETRY'
     g ctx, (err, ctx)->
       debug err, ctx
-      assert util.isError err, 'no error'
+      assert util.isError err, 'error'
       assert ctx.tryCnt is 3 , 'try 3'
       assert err, "must exist"
       done()
@@ -184,14 +184,13 @@ describe 'handover SIDM', ()->
         num : x 
     g.parallel inputs, (errs, results )->      
       debug 'results', errs, results 
-      assert errs , 'error'
+      assert util.isError errs, 'error'
       assert results[2].num is 40, 'not correct '
       done()
 
 
 
-describe 'handover forkjoin', ()-> 
-
+describe 'handover forkjoin', ()->  
   it 'base fork join ', (done)-> 
 
     ctx = {}
@@ -219,8 +218,8 @@ describe 'handover forkjoin', ()->
     # f (req,res,next)
     f ctx, (err, ctx)->
       debug 'errs, ctx', err, ctx  
-      assert util.isError err, 'no error'
-      assert util.isError err.errors[2], 'no error'
+      assert util.isError err, 'error'
+      assert util.isError err.errors[2], 'error'
       debug err.toString()
       assert ctx.a , "must exist"
       assert ctx.b , "must exist"
