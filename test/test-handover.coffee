@@ -225,3 +225,40 @@ describe 'handover forkjoin', ()->
       assert ctx.b , "must exist"
 
       done()
+
+
+
+describe 'handover compose', ()->  
+  it 'compose', (done)-> 
+    f1 = (a, b, next)-> 
+      # console.log 'f1', a, b, next
+      # return next new Error 'E'
+      next null, a * b, a, b
+    f2 = (a, b, c, next)-> 
+      # console.log 'f2', a, b, c, next
+      next null, a + b + c, a, b, c
+    fn = ho.compose f1, f2
+
+    fn 2,3, (err, output, a, b, c)->
+
+      # console.log 'err ', err
+      # console.log   output, a, b, c
+      assert.equal err, null
+      assert.equal output, 11
+      assert.equal a, 6
+      assert.equal b, 2
+      assert.equal c, 3
+      done()
+
+describe 'handover map', ()->  
+  it 'map', (done)->   
+
+    data = [2..5]
+    fn = (n, next)-> 
+      # console.log 'fn', n
+      next null, n * n
+    ho.map data, fn, (errs, results)->
+      # console.log 'err ' , errs
+      # console.log 'results ' , results
+      assert.equal results[0], 4
+      done()
