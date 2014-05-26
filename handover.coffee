@@ -24,25 +24,31 @@ fnForkJoin = (handsToFork)->
   debug 'fnForkJoin', handsToFork.length
   return (ctxArgs..., outCallback)->
     endstate = new Array()
-    result = new Array()
+    errors = new Array()
     handsToFork.forEach (task, index)->
       endstate[index] = false
-      result[index] = undefined
-
+      errors[index] = undefined
+ 
     checkAllEnd =()->
-      if endstate.indexOf(false) is -1            
-        err = null
-        for val in result
-          if val
-            err = val
-            break 
-        outCallback(err) 
+      return unless endstate.indexOf(false) is -1  
+      debug 'fnForkJoin errors - ', errors
+      errs = errors.filter (err)-> err 
+      debug 'errs = ', errs
+      # errors = undefined unless hasErr
+      error = undefined
+      if errs.length > 0
+        error = errs[0]
+        error.errors = errors
+
+      debug 'fnForkJoin finished - ', error
+      outCallback(error) 
+
 
     handsToFork.forEach (task, index)-> 
       debug 'Parallel run  ', index
       fnDone = (err)->
         debug 'Parallel done ', index
-        result[index] = err
+        errors[index] = err
         endstate[index] =  true
         checkAllEnd()
 
@@ -97,26 +103,24 @@ fnHandover = (hands, ctxArgs..., outCallback)->
 
 runSIDM = (fn, inputs, outCallback)-> 
   endstate = new Array()
-  result = new Array()
+  errors = new Array()
   inputs.forEach (input, index)->
     endstate[index] = false
-    result[index] = undefined
+    errors[index] = undefined
 
   checkAllEnd =()->
-    if endstate.indexOf(false) is -1            
-      err = null
-      for val in result
-        if val
-          err = val
-          break 
-      debug 'SIDM finished - ', err
-      outCallback(err, inputs) 
+    return unless endstate.indexOf(false) is -1  
+    debug 'SIDM errors - ', errors
+    hasErr = errors.some (err)-> err 
+    errors = undefined unless hasErr
+    debug 'SIDM finished - ', hasErr, errors
+    outCallback(errors, inputs) 
 
   inputs.forEach (args, index)->
     debug 'SIDM run  ', index
     fnDone = (err )->
       debug 'SIDM done ', index, args
-      result[index] = err
+      errors[index] = err
       endstate[index] =  true
       checkAllEnd()
 
