@@ -15,139 +15,91 @@ debug =  require('debug')('handover')
 _toString = Object.prototype.toString
 _isArray = Array.isArray or (obj) ->
   _toString.call(obj) is "[object Array]"
-
-findFnByArity = (fnFlows, arity)->
-  debug 'findFnByArity  ', arity     
-  inx = 0 
-  for fn in fnFlows
-    # console.log 'fn.length', fn.length
-    if not _isArray(fn) and fn.length is arity
-      return inx
-    inx++
-  return -1
-
-fnForkJoin = (handsToFork)->
-  debug 'fnForkJoin', handsToFork.length
-  return (ctxArgs..., outCallback)->
-    endstate = new Array()
-    errors = new Array()
-    handsToFork.forEach (task, index)->
-      endstate[index] = false
-      errors[index] = undefined
+_isError = (obj)-> 
+  _toString.call(obj) is "[object Error]"
  
-    checkAllEnd =()->
-      return unless endstate.indexOf(false) is -1  
-      debug 'fnForkJoin errors - ', errors
-      errs = errors.filter (err)-> err 
-      debug 'errs = ', errs
-      # errors = undefined unless hasErr
-      error = undefined
-      if errs.length > 0
-        error = errs[0]
-        error.errors = errors
 
-      debug 'fnForkJoin finished - ', error
-      outCallback(error) 
+cutFlowsByArity = (fnFlows, arity)->
+  debug 'cutFlowsByArity  ', arity     
+  for fn, inx in fnFlows
+    # debug 'fn.length', fn.length
+    if not _isArray(fn) and fn.length is arity
+      return fnFlows[inx..] 
+  return []
 
+forkJoin = (fns, outCallback)->
+  l = fns.length 
+  errors = [0...l].map ()-> undefined
+  results = errors.map ()-> undefined
+  finished = errors.map ()-> false
 
-    handsToFork.forEach (task, index)-> 
-      debug 'Parallel run  ', index
-      fnDone = (err)->
-        debug 'Parallel done ', index
-        errors[index] = err
-        endstate[index] =  true
-        checkAllEnd()
+  # debug 'errors', errors
+  # debug 'results', results
+  # debug 'finished', finished
 
-      argsToCall = ctxArgs.concat fnDone 
-      task.apply undefined, argsToCall
-
-
-fnHandover = (hands, ctxArgs..., outCallback)->
-  debug 'fnHandover', arguments
-  if typeof outCallback isnt 'function'
-    ctxArgs.push outCallback
-    outCallback = null 
-
-  arity = ctxArgs.length + 1 # include callback
-  arityOfErrorHandler = arity + 1
-  debug 'ctxArgs', ctxArgs 
-  debug 'outCallback', typeof outCallback 
-  debug 'arity of hand = ', arity
-
-
-  callOutNext = (err)->
-    debug 'callOutNext - err = ', err
-    if outCallback
-      argsToCall = [err].concat ctxArgs
-      debug 'callOutNext - arg = ', argsToCall    
-      outCallback.apply undefined, argsToCall
-
-  mkNext = (next_hands)->
-    return (err)-> 
-      debug 'next of handover', err
-      return callOutNext err if next_hands is undefined
-      inx = 0
-      inx = findFnByArity(next_hands, arityOfErrorHandler) if err # find Error Jump   
-      return callOutNext(err) if not next_hands[inx]? 
-      debug 'inx of hand to run = ', inx     
-
-      handToRun = next_hands[inx]
-      handsOthers = next_hands[inx + 1 ..]
-
-      if _isArray handToRun 
-        handToRun = fnForkJoin handToRun
-
-
-      fnNext = mkNext(handsOthers)
-      argsToCall = ctxArgs.concat fnNext 
-      debug 'hand args = ', argsToCall
-      if handToRun.length is arityOfErrorHandler
-        argsToCall = [err].concat argsToCall        
-      return handToRun.apply undefined, argsToCall 
-      
-  mkNext(hands)(null) 
-
-runSIDM = (fn, inputs, outCallback)-> 
-  endstate = new Array()
-  errors = new Array()
-  inputs.forEach (input, index)->
-    endstate[index] = false
-    errors[index] = undefined
-
-  checkAllEnd =()->
-    return unless endstate.indexOf(false) is -1  
-
-
-    debug 'errs = ', errs
-    # errors = undefined unless hasErr
-
-    debug 'SIDM errors - ', errors
+  checkJoin = ()->
+    return unless finished.every (v)-> v
     errs = errors.filter (err)-> err 
+    # debug 'errs = ', errs
+    # errors = undefined unless hasErr
     error = undefined
     if errs.length > 0
       error = errs[0]
       error.errors = errors
-    debug 'SIDM finished - ', error
-    outCallback(error, inputs) 
+    debug 'checkJoin - ', error
+    outCallback(error, results) 
+  
+  for fn, inx in fns  
+    do (inx)->
+      debug 'call fork', inx 
+      fn (err, output...)->
+        output = output[0] if output.length is 1
+        finished[inx] = true
+        results[inx] = output
+        errors[inx] = err 
+        checkJoin()
 
 
+fnForkJoin = (flowsToFork)-> 
+  return (ctxArgs..., outCallback)->
+    fns = flowsToFork.map (flow)->  
+      return (next)-> 
+        flow = [flow] unless _isArray flow
+        runFlow flow, null, ctxArgs, next 
+    forkJoin fns, outCallback
+ 
 
+runFlow = (fnFlows, err, ctxArgs, outCallback)->
+  debug 'runFlow', arguments   
+ 
+  inx = 0 
+  if err
+    errorHandlerArity = ctxArgs.length + 2 # include err, callback
+    fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
+ 
+  return outCallback err, ctxArgs... if fnFlows.length is 0 
 
-  inputs.forEach (args, index)->
-    debug 'SIDM run  ', index
-    fnDone = (err )->
-      debug 'SIDM done ', index, args
-      errors[index] = err
-      endstate[index] =  true
-      checkAllEnd()
+  [fn, fns...] = fnFlows  
 
-    # debug ' typeof args, ',  (typeof args), args
-    unless _isArray args
-      args = [args]
+  argsToCall = ctxArgs
+  argsToCall = [err].concat ctxArgs if err 
+  
+  if _isArray fn
+    fn = fnForkJoin fn
 
-    argsToCall = args.concat fnDone 
-    debug  'argsToCall', argsToCall
-    fn argsToCall...
+  fn argsToCall..., (err)->
+    runFlow fns, err, ctxArgs, outCallback 
+ 
+ 
+
+runSIDM = (fn, inputs, outCallback)-> 
+  fns = inputs.map (args)->  
+    args = [args] unless _isArray args
+    return (next)->   
+      fn args..., next 
+  forkJoin fns, outCallback
+
+ 
 
 fnRetry = (fn, tryLimit)->
   return (args..., outCallback)->
@@ -177,56 +129,41 @@ _compose = (functions...)->
 
 
 
-_map = (data, fn, outCallback)->
-  errors = []
-  results = []
-  endstate = []
+_map = (data, fn, outCallback)-> 
 
-  checkAllEnd =()->
-    return unless endstate.indexOf(false) is -1  
-    debug 'fnForkJoin errors - ', errors
-    errs = errors.filter (err)-> err 
-    debug 'errs = ', errs
-    # errors = undefined unless hasErr
-    error = undefined
-    if errs.length > 0
-      error = errs[0]
-      error.errors = errors
-
-    debug 'fnForkJoin finished - ', error
-    outCallback(error, results) 
-
-  callFn = (inx, args...)-> 
-    fn args..., (err, output)-> 
-      errors[inx] = err
-      results[inx] = output
-      endstate[inx] = true
-      checkAllEnd()
-  
-  if _isArray data
-    for item, inx in data
-      errors[inx] = null
-      results[inx] = null
-      endstate[inx] = false
-    for item, inx in data
-      callFn inx, item
+  if _isArray data 
+    fns = data.map (args)->  
+      args = [args] unless _isArray args
+      return (next)->   
+        fn args..., next 
+    forkJoin fns, outCallback
   else
-    inx = 0
+    fns = []
+    result = {}
     for own key, value of data
-      errors[inx] = null
-      results[inx] = null
-      endstate[inx] = false
-      inx++
-    for own key, value of data
-      callFn inx, key, value
-      inx++
-      # fn item, (err, output)->
-
-
-
+      do (key, value)->
+        fns.push (next)->
+          fn key, value, (err, output...)->
+            output = output[0] if output.length is 1
+            result[key] = output
+            next err, output...
+    forkJoin fns, (err, results)-> 
+      outCallback err, result
+ 
 handover = (hands)-> 
-  fn = (args...)->
-    fnHandover(hands, args...) 
+  fn = (args..., outCallback)->  
+    first = args[0]
+    err = null
+    debug 'first', first
+    if first is null or first is undefined or _isError first
+      err = args.shift()
+      debug 'set err = ', err
+  
+    if typeof outCallback isnt 'function'
+      args.push outCallback
+      outCallback = ()->
+
+    runFlow hands, err, args, outCallback
   fn.parallel = (args...)->
     runSIDM(fn, args...)
   fn.fnRetry = (tryLimit)->

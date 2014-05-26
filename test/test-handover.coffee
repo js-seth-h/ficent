@@ -2,7 +2,7 @@ ho = require '../handover'
 assert = require 'assert'
 util = require 'util'
 
-debug = require('debug')('test')
+debug = require('debug')('handover-test')
 
 func1 = (ctx, next)-> 
   ctx.a = true
@@ -10,7 +10,7 @@ func1 = (ctx, next)->
 func2 = (ctx, next)-> 
   ctx.b = true
   next()
-describe 'handover', ()->   
+describe 'handover', ()->    
   it 'base ', (done)-> 
 
     ctx = 
@@ -137,7 +137,7 @@ describe 'handover', ()->
       assert ctx.tryCnt is 2 , 'try 2 and success' 
       done()
 
-describe 'handover SIDM', ()->  
+describe 'handover SIDM', ()->   
   it 'SIDM no err check ', (done)-> 
 
     ctx = {
@@ -155,12 +155,12 @@ describe 'handover SIDM', ()->
     for x in [0..3]
       inputs[x] = 
         num : x 
+    debug 'inputs',inputs
     g.parallel inputs, (errs, results )-> 
       debug 'results', errs, results     
       assert not util.isError errs, 'no error'
-      assert results[1].num is 10, 'not correct '
-      done()
-
+      assert.equal results[1].num, 10, 
+      done() 
   it 'SIDM err  ', (done)-> 
 
     ctx = {
@@ -173,6 +173,7 @@ describe 'handover SIDM', ()->
           return next new Error "FAKE 1"
         next()
       (ctx, next)-> 
+        debug 'f2 ', ctx, next
         ctx.num = ctx.num * 10
         if ctx.num is 0
           return next new Error "FAKE 2"
@@ -190,7 +191,7 @@ describe 'handover SIDM', ()->
 
 
 
-describe 'handover forkjoin', ()->  
+describe 'handover forkjoin', ()->    
   it 'base fork join ', (done)-> 
 
     ctx = {}
@@ -204,9 +205,7 @@ describe 'handover forkjoin', ()->
       assert ctx.a , "must exist"
       assert ctx.b , "must exist" 
       done()
-  
- 
-  
+   
   it 'base fork join ', (done)-> 
 
     ctx = {}
@@ -228,7 +227,7 @@ describe 'handover forkjoin', ()->
 
 
 
-describe 'handover compose', ()->  
+describe 'handover compose', ()->    
   it 'compose', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next
@@ -249,10 +248,9 @@ describe 'handover compose', ()->
       assert.equal b, 2
       assert.equal c, 3
       done()
-
-describe 'handover map', ()->  
-  it 'map', (done)->   
-
+ 
+describe 'handover map', ()->    
+  it 'map', (done)->    
     data = [2..5]
     fn = (n, next)-> 
       # console.log 'fn', n
@@ -261,4 +259,18 @@ describe 'handover map', ()->
       # console.log 'err ' , errs
       # console.log 'results ' , results
       assert.equal results[0], 4
+      done()
+
+
+  it 'map obj', (done)->    
+    data = 
+      9 : 6
+      2 : 8
+    fn = (k, v, next)-> 
+      console.log 'fn', k, v
+      next null, k * v
+    ho.map data, fn, (errs, results)->
+      console.log 'err ' , errs
+      console.log 'results ' , results
+      assert.equal results[2], 16
       done()
