@@ -167,6 +167,7 @@ handover = (hands)->
     fnRetry(fn,tryLimit)
   return fn 
 
+handover.hands = {}  
 handover.fnForkJoin = fnForkJoin
 
 module.exports = exports = handover
