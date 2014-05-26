@@ -14,7 +14,8 @@ describe 'handover', ()->
 
   it 'base ', (done)-> 
 
-    ctx = {}
+    ctx = 
+      name : 'context base'
     
     f = ho [ func1, func2]
     # f (req,res,next)
@@ -112,7 +113,7 @@ describe 'handover', ()->
         next()
     ]
     inputs = []
-    for x in [0..5]
+    for x in [0..3]
       inputs[x] = 
         num : x 
     g.parallel inputs, (errs, outputs, next2 )->
@@ -120,7 +121,7 @@ describe 'handover', ()->
       debug 'outputs', outputs
       done()
 
-  
+   
   it 'retry ', (done)-> 
 
     ctx = 
@@ -136,6 +137,7 @@ describe 'handover', ()->
       f.retry 3
     ]
     # f (req,res,next)
+    debug 'RETRY'
     g ctx, (err, ctx)->
       assert ctx.tryCnt is 3 , 'try 3'
       assert err, "must exist"
