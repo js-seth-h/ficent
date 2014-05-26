@@ -4,7 +4,7 @@
   "description": "handover",
   "main": "handover.coffee",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "set TEST=true && mocha --compilers coffee:coffee-script/register   --reporter spec"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,11 @@
   "bugs": {
     "url": "https://github.com/js-seth-h/handover/issues"
   },
-  "homepage": "https://github.com/js-seth-h/handover"
+  "homepage": "https://github.com/js-seth-h/handover",
+  "dependencies": {
+    "debug": "^0.8.1"
+  },
+  "devDependencies": {
+    "coffee-script": "^1.7.1"
+  }
 }
