@@ -89,23 +89,23 @@ runFlow = (fnFlows, err, args, outCallback)->
     runFlow fns, err, args, outCallback 
   
 
-runForkToss = (fnFlows, args, outCallback)->
+runForkChain = (fnFlows, args, outCallback)->
   fns = fnFlows.map (flow)->  
     return (next)-> 
       flow = [flow] unless _isArray flow
-      runToss flow, args, next 
+      runChain flow, args, next 
   joinAsyncFns fns, outCallback
 
-runToss = ( fnFlows, args, outCallback)->
-  debug 'runToss', fnFlows, args
+runChain = ( fnFlows, args, outCallback)->
+  debug 'runChain', fnFlows, args
   [fn, fns...] = fnFlows  
   if _isArray fn
     fnArr = fn
-    fn = (args..., next)-> runForkToss fnArr, args, next 
+    fn = (args..., next)-> runForkChain fnArr, args, next 
   fn args..., (err, output...)->
     return outCallback err if err   
     return outCallback null, output... if fns.length is 0 
-    runToss fns, output, outCallback 
+    runChain fns, output, outCallback 
 
  
 
@@ -174,12 +174,12 @@ _flow = (flowFns)->
 
     runFlow flowFns, err, args, outCallback
 
-_toss = (tossFns)->
+_chain = (chainFns)->
   return (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = ()->
-    runToss tossFns, args, outCallback
+    runChain chainFns, args, outCallback
 
 _flow = (flowFns)->
   return (args..., outCallback)->  
@@ -202,7 +202,7 @@ handover.hands = {}
 
 handover.flow = _flow
 # handover.fnForkJoin = fnForkJoin
-handover.toss = _toss
+handover.chain = _chain
 # handover.compose = _compose
 handover.map = _map
 handover.retry = _retry

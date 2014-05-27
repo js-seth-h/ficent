@@ -256,7 +256,7 @@ describe 'handover map', ()->
 
 
 
-describe 'toss', ()->     
+describe 'chain', ()->     
   it 'basic', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next
@@ -265,7 +265,7 @@ describe 'toss', ()->
     f2 = (a, b, c, next)-> 
       # console.log 'f2', a, b, c, next
       next null, a + b + c, a, b, c
-    fn = ho.toss [f1, f2]
+    fn = ho.chain [f1, f2]
 
     fn 2,3, (err, output, a, b, c)->
 
@@ -277,7 +277,7 @@ describe 'toss', ()->
       assert.equal b, 2
       assert.equal c, 3
       done()
-  it 'toss', (done)-> 
+  it 'chain', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next
       # return next new Error 'E'
@@ -289,10 +289,10 @@ describe 'toss', ()->
     f4 = (a, b, c, d, next)-> next null, a - b, c - d
     f5 = (output, next)-> next null, output[0] * output[1][1] + output[1][0] 
     # f5 = (arr, next)-> ho.map arr, fn, next
-    fn = ho.toss [f1, f2, [f3, f4], f5]
+    fn = ho.chain [f1, f2, [f3, f4], f5]
 
     fn 2,3, (err, output)->
-      debug 'toss out', arguments
+      debug 'chain out', arguments
       # console.log 'err ', err
       # console.log   output, a, b, c
       assert.equal err, null
