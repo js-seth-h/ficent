@@ -197,12 +197,23 @@ _flow = (flowFns)->
     runFlow flowFns, err, args, outCallback
 
 
+
+make = 
+  http: ()->
+    return (req,res,next)->
+      req.tmp = req.tmp || {}
+      req.data = req.data || {}
+      
+      res.tmp = res.tmp || {}
+      res.data = res.data || {}
+      next()
+
+
  
 handover = (hands)-> return _flow(hands)
 
 handover.hands = {}
-handover.make = {}
-
+handover.make = make
 # handover.mk = 
   # retry: _retry
   # map : _map
