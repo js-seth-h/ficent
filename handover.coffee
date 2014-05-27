@@ -200,7 +200,9 @@ _flow = (flowFns)->
  
 handover = (hands)-> return _flow(hands)
 
-handover.fn = {}  
+handover.hands = {}
+handover.make = {}
+
 # handover.mk = 
   # retry: _retry
   # map : _map
