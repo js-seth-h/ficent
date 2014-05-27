@@ -226,28 +226,7 @@ describe 'handover forkjoin', ()->
       done()
 
 
-
-describe 'handover compose', ()->    
-  it 'compose', (done)-> 
-    f1 = (a, b, next)-> 
-      # console.log 'f1', a, b, next
-      # return next new Error 'E'
-      next null, a * b, a, b
-    f2 = (a, b, c, next)-> 
-      # console.log 'f2', a, b, c, next
-      next null, a + b + c, a, b, c
-    fn = ho.compose f1, f2
-
-    fn 2,3, (err, output, a, b, c)->
-
-      # console.log 'err ', err
-      # console.log   output, a, b, c
-      assert.equal err, null
-      assert.equal output, 11
-      assert.equal a, 6
-      assert.equal b, 2
-      assert.equal c, 3
-      done()
+ 
  
 describe 'handover map', ()->    
   it 'map', (done)->    
@@ -267,10 +246,57 @@ describe 'handover map', ()->
       9 : 6
       2 : 8
     fn = (k, v, next)-> 
-      console.log 'fn', k, v
+      # console.log 'fn', k, v
       next null, k * v
     ho.map data, fn, (errs, results)->
-      console.log 'err ' , errs
-      console.log 'results ' , results
+      # console.log 'err ' , errs
+      # console.log 'results ' , results
       assert.equal results[2], 16
+      done()
+
+
+
+describe 'toss', ()->     
+  it 'basic', (done)-> 
+    f1 = (a, b, next)-> 
+      # console.log 'f1', a, b, next
+      # return next new Error 'E'
+      next null, a * b, a, b
+    f2 = (a, b, c, next)-> 
+      # console.log 'f2', a, b, c, next
+      next null, a + b + c, a, b, c
+    fn = ho.toss [f1, f2]
+
+    fn 2,3, (err, output, a, b, c)->
+
+      # console.log 'err ', err
+      # console.log   output, a, b, c
+      assert.equal err, null
+      assert.equal output, 11
+      assert.equal a, 6
+      assert.equal b, 2
+      assert.equal c, 3
+      done()
+  it 'toss', (done)-> 
+    f1 = (a, b, next)-> 
+      # console.log 'f1', a, b, next
+      # return next new Error 'E'
+      next null, a * b, a, b
+    f2 = (a, b, c, next)-> 
+      # console.log 'f2', a, b, c, next
+      next null, a + b + c, a, b, c
+    f3 = (a, b, c, d, next)-> next null, a + b +  c + d
+    f4 = (a, b, c, d, next)-> next null, a - b, c - d
+    f5 = (output, next)-> next null, output[0] * output[1][1] + output[1][0] 
+    # f5 = (arr, next)-> ho.map arr, fn, next
+    fn = ho.toss [f1, f2, [f3, f4], f5]
+
+    fn 2,3, (err, output)->
+      debug 'toss out', arguments
+      # console.log 'err ', err
+      # console.log   output, a, b, c
+      assert.equal err, null
+      assert.equal output, -17
+      # assert.equal output[0], 22
+      # assert.equal output[1][0], 5
       done()

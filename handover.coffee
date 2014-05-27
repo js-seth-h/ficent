@@ -60,59 +60,66 @@ joinAsyncFns = (fns, outCallback)->
         checkJoin()
  
 
-runForkFlow = (fnFlows, ctxArgs, outCallback)->
+runForkFlow = (fnFlows, args, outCallback)->
   fns = fnFlows.map (flow)->  
     return (next)-> 
       flow = [flow] unless _isArray flow
-      runFlow flow, null, ctxArgs, next 
+      runFlow flow, null, args, next 
   joinAsyncFns fns, outCallback
 
 
-runFlow = (fnFlows, err, ctxArgs, outCallback)->
-  debug 'runFlow', arguments   
- 
-  inx = 0 
+runFlow = (fnFlows, err, args, outCallback)->
+  debug 'runFlow', arguments    
+
   if err
-    errorHandlerArity = ctxArgs.length + 2 # include err, callback
+    errorHandlerArity = args.length + 2 # include err, callback
     fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
  
-  return outCallback err, ctxArgs... if fnFlows.length is 0 
-
-  [fn, fns...] = fnFlows  
-
-  argsToCall = ctxArgs
-  argsToCall = [err].concat ctxArgs if err 
+  return outCallback err, args... if fnFlows.length is 0 
   
+  [fn, fns...] = fnFlows  
   if _isArray fn
-    # fn = fnForkJoin fn
-    runForkFlow fn, ctxArgs, (err)->
-      runFlow fns, err, ctxArgs, outCallback 
-  else
-    fn argsToCall..., (err)->
-      runFlow fns, err, ctxArgs, outCallback 
+    fnArr = fn
+    fn = (args..., next)-> runForkFlow fnArr, args, next 
+
+  argsToCall = args
+  argsToCall = [err].concat args if err 
+
+  fn argsToCall..., (err)->
+    runFlow fns, err, args, outCallback 
+  
+
+runForkToss = (fnFlows, args, outCallback)->
+  fns = fnFlows.map (flow)->  
+    return (next)-> 
+      flow = [flow] unless _isArray flow
+      runToss flow, args, next 
+  joinAsyncFns fns, outCallback
+
+runToss = ( fnFlows, args, outCallback)->
+  debug 'runToss', fnFlows, args
+  [fn, fns...] = fnFlows  
+  if _isArray fn
+    fnArr = fn
+    fn = (args..., next)-> runForkToss fnArr, args, next 
+  fn args..., (err, output...)->
+    return outCallback err if err   
+    return outCallback null, output... if fns.length is 0 
+    runToss fns, output, outCallback 
+
  
- 
-
-# runSIDM = (fn, inputs, outCallback)-> 
-#   fns = inputs.map (args)->  
-#     args = [args] unless _isArray args
-#     return (next)->   
-#       fn args..., next 
-#   joinAsyncFns fns, outCallback
-
- 
 
 
-callFirstFn = (funcArr, args, outCallback)->
-  [fn, fns...] = funcArr
-  fn args...,(err, output...)-> 
-    return outCallback err if err
-    return outCallback err, output... if fns.length is 0
-    callFirstFn fns, output, outCallback # [err, output...]  
+# callFirstFn = (funcArr, args, outCallback)->
+#   [fn, fns...] = funcArr
+#   fn args...,(err, output...)-> 
+#     return outCallback err if err
+#     return outCallback err, output... if fns.length is 0
+#     callFirstFn fns, output, outCallback # [err, output...]  
 
-_compose = (functions...)->  
-  return (args..., outCallback)-> 
-    callFirstFn functions, args, outCallback
+# _compose = (functions...)->  
+#   return (args..., outCallback)-> 
+#     callFirstFn functions, args, outCallback
 
 
 
@@ -166,17 +173,16 @@ _flow = (flowFns)->
       outCallback = ()->
 
     runFlow flowFns, err, args, outCallback
-    
+
 _toss = (tossFns)->
   return (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = ()->
-    callFirstFn tossFns, args, outCallback
+    runToss tossFns, args, outCallback
 
-
-handover = (hands)-> 
-  fn = (args..., outCallback)->  
+_flow = (flowFns)->
+  return (args..., outCallback)->  
     first = args[0]
     err = null
     debug 'first', first
@@ -188,17 +194,16 @@ handover = (hands)->
       args.push outCallback
       outCallback = ()->
 
-    runFlow hands, err, args, outCallback
-  # fn.parallel = (args...)->
-  #   runSIDM(fn, args...)
-  # fn.fnRetry = (tryLimit)->
-  #   fnRetry(fn,tryLimit)
-  return fn 
+    runFlow flowFns, err, args, outCallback
+ 
+handover = (hands)-> return _flow(hands)
 
 handover.hands = {}  
-# handover.fnForkJoin = fnForkJoin
 
-handover.compose = _compose
+handover.flow = _flow
+# handover.fnForkJoin = fnForkJoin
+handover.toss = _toss
+# handover.compose = _compose
 handover.map = _map
 handover.retry = _retry
 module.exports = exports = handover
