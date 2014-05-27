@@ -69,10 +69,8 @@ runForkFlow = (fnFlows, args, outCallback)->
 
 
 runFlow = (fnFlows, err, args, outCallback)->
-  debug 'runFlow', arguments    
-
+  errorHandlerArity = args.length + 2 # include err, callback
   if err
-    errorHandlerArity = args.length + 2 # include err, callback
     fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
  
   return outCallback err, args... if fnFlows.length is 0 
@@ -83,7 +81,7 @@ runFlow = (fnFlows, err, args, outCallback)->
     fn = (args..., next)-> runForkFlow fnArr, args, next 
 
   argsToCall = args
-  argsToCall = [err].concat args if err 
+  argsToCall = [err].concat args if fn.length is errorHandlerArity
 
   fn argsToCall..., (err)->
     runFlow fns, err, args, outCallback 
@@ -158,21 +156,7 @@ _retry = (tryLimit, fn)->
         outCallback err, output...
     argsToCall = args.concat fnDone 
     fn argsToCall...
-
-_flow = (flowFns)->
-  return (args..., outCallback)->  
-    first = args[0]
-    err = null
-    debug 'first', first
-    if first is null or first is undefined or _isError first
-      err = args.shift()
-      debug 'set err = ', err
-
-    if typeof outCallback isnt 'function'
-      args.push outCallback
-      outCallback = ()->
-
-    runFlow flowFns, err, args, outCallback
+ 
 
 _chain = (chainFns)->
   return (args..., outCallback)-> 
@@ -185,7 +169,7 @@ _flow = (flowFns)->
   return (args..., outCallback)->  
     first = args[0]
     err = null
-    debug 'first', first
+    # debug 'first', first
     if first is null or first is undefined or _isError first
       err = args.shift()
       debug 'set err = ', err
@@ -194,6 +178,8 @@ _flow = (flowFns)->
       args.push outCallback
       outCallback = ()->
 
+    debug '_flow arity = ', args.length
+    debug '_flow err= ', err
     runFlow flowFns, err, args, outCallback
 
 
