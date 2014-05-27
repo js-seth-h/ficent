@@ -10,7 +10,8 @@ func1 = (ctx, next)->
 func2 = (ctx, next)-> 
   ctx.b = true
   next()
-describe 'handover', ()->    
+
+describe 'flow', ()->    
   it 'base ', (done)-> 
 
     ctx = 
@@ -90,8 +91,9 @@ describe 'handover', ()->
       done()
 
 
+describe 'retry', ()->    
    
-  it 'retry ', (done)-> 
+  it 'flow retry flow ', (done)-> 
 
     ctx = 
       tryCnt : 0
@@ -108,13 +110,13 @@ describe 'handover', ()->
     # f (req,res,next)
     debug 'RETRY'
     g ctx, (err, ctx)->
-      debug err, ctx
+      # debug err, ctx
       assert util.isError err, 'error'
       assert ctx.tryCnt is 3 , 'try 3'
       assert err, "must exist"
       done()
  
-  it 'retry stop', (done)-> 
+  it 'retry flow / stop', (done)-> 
 
     ctx = 
       tryCnt : 0
@@ -127,9 +129,8 @@ describe 'handover', ()->
       next new Error 'FAKE'
     f = ho [ func_mk_Err ]
 
-    g = ho [
-      ho.retry 5, f
-    ]
+    g = ho.retry 5, f
+    
     # f (req,res,next)
     g ctx, (err, ctx)->
       debug 'err, ctx', err, ctx
@@ -137,8 +138,76 @@ describe 'handover', ()->
       assert ctx.tryCnt is 2 , 'try 2 and success' 
       done()
 
-describe 'handover SIDM', ()->   
-  it 'SIDM no err check ', (done)-> 
+  it 'retry fn', (done)-> 
+
+    ctx = 
+      tryCnt : 0
+    
+    func_mk_Err = (ctx, next)->
+      ctx.tryCnt++
+      debug 'mk Err', ctx.tryCnt, ctx
+      if ctx.tryCnt is 2
+        return next null, ctx
+      next new Error 'FAKE just fn' 
+
+    g = ho.retry 5, func_mk_Err
+    
+    # f (req,res,next)
+    g ctx, (err, ctx)->
+      debug 'err, ctx', err, ctx
+      assert not util.isError err, 'no error'
+      assert ctx.tryCnt is 2 , 'try 2 and success' 
+      done()
+
+  it 'flow retry fn', (done)-> 
+
+    ctx = 
+      tryCnt : 0
+    
+    func_mk_Err = (ctx, next)->
+      ctx.tryCnt++
+      debug 'mk Err', ctx.tryCnt, ctx
+      if ctx.tryCnt is 2
+        return next null, ctx
+      next new Error 'FAKE just fn' 
+
+    g = ho [
+      ho.retry 5, func_mk_Err
+    ]
+    # f (req,res,next)
+    g ctx, (err, ctx)->
+      debug 'err, ctx', err, ctx
+      assert not util.isError err, 'no error'
+      assert ctx.tryCnt is 2 , 'try 2 and success' 
+      done() 
+
+describe 'map', ()->   
+  it 'map', (done)->    
+    data = [2..5]
+    fn = (n, next)-> 
+      # console.log 'fn', n
+      next null, n * n
+    ho.map(fn) data, (errs, results)->
+      # console.log 'err ' , errs
+      # console.log 'results ' , results
+      assert.equal results[0], 4
+      done()
+
+
+  it 'map obj', (done)->    
+    data = 
+      9 : 6
+      2 : 8
+    fn = (k, v, next)-> 
+      # console.log 'fn', k, v
+      next null, k * v
+    ho.map(fn) data, (errs, results)->
+      # console.log 'err ' , errs
+      # console.log 'results ' , results
+      assert.equal results[2], 16
+      done()
+
+  it 'with CTX / no err check ', (done)-> 
 
     ctx = {
       name: 'this is multiplex context'
@@ -162,7 +231,7 @@ describe 'handover SIDM', ()->
       assert not util.isError errs, 'no error'
       assert.equal results[1].num, 10, 
       done() 
-  it 'SIDM err  ', (done)-> 
+  it 'with CTX / SIDM err  ', (done)-> 
 
     ctx = {
       name: 'this is multiplex context'
@@ -192,7 +261,7 @@ describe 'handover SIDM', ()->
 
 
 
-describe 'handover forkjoin', ()->    
+describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
 
     ctx = {}
@@ -207,7 +276,7 @@ describe 'handover forkjoin', ()->
       assert ctx.b , "must exist" 
       done()
    
-  it 'base fork join ', (done)-> 
+  it 'with Err ', (done)-> 
 
     ctx = {}
     
@@ -228,34 +297,7 @@ describe 'handover forkjoin', ()->
 
 
  
- 
-describe 'handover map', ()->    
-  it 'map', (done)->    
-    data = [2..5]
-    fn = (n, next)-> 
-      # console.log 'fn', n
-      next null, n * n
-    ho.map(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
-      assert.equal results[0], 4
-      done()
-
-
-  it 'map obj', (done)->    
-    data = 
-      9 : 6
-      2 : 8
-    fn = (k, v, next)-> 
-      # console.log 'fn', k, v
-      next null, k * v
-    ho.map(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
-      assert.equal results[2], 16
-      done()
-
-
+  
 
 describe 'chain', ()->     
   it 'basic', (done)-> 

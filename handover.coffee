@@ -143,19 +143,19 @@ runReduce = (data, fn, memo, outCallback)->
 _reduce = (memo, fn)->
   return (data, outCallback)->
     runReduce data, fn, memo, outCallback
-    
+
 
 _retry = (tryLimit, fn)->
   return (args..., outCallback)->
     debug 'fnRetry'
     tryCnt = 0
-    fnDone = (err)->
+    fnDone = (err, output...)->
       debug 'fnDone of fnRetry'
       tryCnt++
       if err and tryCnt < tryLimit
         fn argsToCall...
       else
-        outCallback err
+        outCallback err, output...
     argsToCall = args.concat fnDone 
     fn argsToCall...
 

@@ -1,6 +1,6 @@
 {
   "name": "handover",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "handover",
   "main": "handover.coffee",
   "scripts": {
