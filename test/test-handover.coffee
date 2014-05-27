@@ -128,7 +128,7 @@ describe 'handover', ()->
     f = ho [ func_mk_Err ]
 
     g = ho [
-      f.fnRetry 5
+      ho.retry 5, f
     ]
     # f (req,res,next)
     g ctx, (err, ctx)->
@@ -156,7 +156,7 @@ describe 'handover SIDM', ()->
       inputs[x] = 
         num : x 
     debug 'inputs',inputs
-    g.parallel inputs, (errs, results )-> 
+    ho.map inputs, g, (errs, results )-> 
       debug 'results', errs, results     
       assert not util.isError errs, 'no error'
       assert.equal results[1].num, 10, 
@@ -183,7 +183,7 @@ describe 'handover SIDM', ()->
     for x in [0..3]
       inputs[x] = 
         num : x 
-    g.parallel inputs, (errs, results )->      
+    ho.map inputs, g,  (errs, results )->      
       debug 'results', errs, results 
       assert util.isError errs, 'error'
       assert results[2].num is 40, 'not correct '
