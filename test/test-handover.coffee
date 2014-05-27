@@ -156,7 +156,8 @@ describe 'handover SIDM', ()->
       inputs[x] = 
         num : x 
     debug 'inputs',inputs
-    ho.map inputs, g, (errs, results )-> 
+    # ho.map inputs, g, (errs, results )->
+    ho.map(g) inputs, (errs, results )->  
       debug 'results', errs, results     
       assert not util.isError errs, 'no error'
       assert.equal results[1].num, 10, 
@@ -183,7 +184,7 @@ describe 'handover SIDM', ()->
     for x in [0..3]
       inputs[x] = 
         num : x 
-    ho.map inputs, g,  (errs, results )->      
+    ho.map(g) inputs,  (errs, results )->      
       debug 'results', errs, results 
       assert util.isError errs, 'error'
       assert results[2].num is 40, 'not correct '
@@ -234,7 +235,7 @@ describe 'handover map', ()->
     fn = (n, next)-> 
       # console.log 'fn', n
       next null, n * n
-    ho.map data, fn, (errs, results)->
+    ho.map(fn) data, (errs, results)->
       # console.log 'err ' , errs
       # console.log 'results ' , results
       assert.equal results[0], 4
@@ -248,7 +249,7 @@ describe 'handover map', ()->
     fn = (k, v, next)-> 
       # console.log 'fn', k, v
       next null, k * v
-    ho.map data, fn, (errs, results)->
+    ho.map(fn) data, (errs, results)->
       # console.log 'err ' , errs
       # console.log 'results ' , results
       assert.equal results[2], 16
@@ -277,7 +278,7 @@ describe 'chain', ()->
       assert.equal b, 2
       assert.equal c, 3
       done()
-  it 'chain', (done)-> 
+  it 'fork', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next
       # return next new Error 'E'
@@ -297,6 +298,49 @@ describe 'chain', ()->
       # console.log   output, a, b, c
       assert.equal err, null
       assert.equal output, -17
+      # assert.equal output[0], 22
+      # assert.equal output[1][0], 5
+      done()
+  it 'map chain', (done)-> 
+    f1 = (a, b, next)-> 
+      # console.log 'f1', a, b, next
+      # return next new Error 'E'
+      next null, [a..b] 
+    fn = (num, next)-> next null, num * num
+    # f5 = (arr, next)-> ho.map arr, fn, next
+    fn = ho.chain [f1, ho.map ho.chain [ fn, fn] ]
+
+    fn 2,3, (err, output)->
+      debug 'chain out', arguments
+      # console.log 'err ', err
+      # console.log   output, a, b, c
+      assert.equal err, null
+      assert.equal output[0], 16
+      assert.equal output[1], 81
+      # assert.equal output[0], 22
+      # assert.equal output[1][0], 5
+      done()
+  it 'map reduce ', (done)-> 
+    f1 = (a, b, next)-> 
+      # console.log 'f1', a, b, next
+      # return next new Error 'E'
+      next null, [a..b] 
+    fn = (num, next)-> next null, num * num
+    fnR = (output, next)->
+      v = output.reduce (acc , e)-> 
+        acc + e
+      next null, v 
+
+    fnR = ho.reduce 0, (acc , e, next)-> next null, acc + e
+    # f5 = (arr, next)-> ho.map arr, fn, next
+    fn = ho.chain [f1, (ho.map ho.chain [ fn, fn]), fnR ]
+
+    fn 2,3, (err, output)->
+      debug 'chain out', arguments
+      # console.log 'err ', err
+      # console.log   output, a, b, c
+      assert.equal err, null
+      assert.equal output, 97
       # assert.equal output[0], 22
       # assert.equal output[1][0], 5
       done()

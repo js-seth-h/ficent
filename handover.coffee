@@ -106,44 +106,44 @@ runChain = ( fnFlows, args, outCallback)->
     return outCallback err if err   
     return outCallback null, output... if fns.length is 0 
     runChain fns, output, outCallback 
-
  
 
+_map = (fn)->
+  return (data, outCallback)->
+#     _map arr, fn, next
+# _map = (data, fn, outCallback)->  
+    if _isArray data 
+      fns = data.map (args)->  
+        args = [args] unless _isArray args
+        return (next)->   
+          fn args..., next 
+      joinAsyncFns fns, outCallback
+    else
+      fns = []
+      result = {}
+      for own key, value of data
+        do (key, value)->
+          fns.push (next)->
+            fn key, value, (err, output...)->
+              output = output[0] if output.length is 1
+              result[key] = output
+              next err, output...
+      joinAsyncFns fns, (err, results)-> 
+        outCallback err, result
+   
 
-# callFirstFn = (funcArr, args, outCallback)->
-#   [fn, fns...] = funcArr
-#   fn args...,(err, output...)-> 
-#     return outCallback err if err
-#     return outCallback err, output... if fns.length is 0
-#     callFirstFn fns, output, outCallback # [err, output...]  
-
-# _compose = (functions...)->  
-#   return (args..., outCallback)-> 
-#     callFirstFn functions, args, outCallback
-
-
-
-_map = (data, fn, outCallback)-> 
-
-  if _isArray data 
-    fns = data.map (args)->  
-      args = [args] unless _isArray args
-      return (next)->   
-        fn args..., next 
-    joinAsyncFns fns, outCallback
-  else
-    fns = []
-    result = {}
-    for own key, value of data
-      do (key, value)->
-        fns.push (next)->
-          fn key, value, (err, output...)->
-            output = output[0] if output.length is 1
-            result[key] = output
-            next err, output...
-    joinAsyncFns fns, (err, results)-> 
-      outCallback err, result
- 
+runReduce = (data, fn, memo, outCallback)->
+  debug 'runReduce', arguments
+  return outCallback null, memo if data.length is 0
+  [head, others...] = data
+  fn memo, head, (err, newMemo)->
+    return outCallback err if err
+    runReduce others, fn, newMemo, outCallback
+      
+_reduce = (memo, fn)->
+  return (data, outCallback)->
+    runReduce data, fn, memo, outCallback
+    
 
 _retry = (tryLimit, fn)->
   return (args..., outCallback)->
@@ -195,15 +195,20 @@ _flow = (flowFns)->
       outCallback = ()->
 
     runFlow flowFns, err, args, outCallback
+
+
  
 handover = (hands)-> return _flow(hands)
 
-handover.hands = {}  
-
+handover.fn = {}  
+# handover.mk = 
+  # retry: _retry
+  # map : _map
 handover.flow = _flow
 # handover.fnForkJoin = fnForkJoin
 handover.chain = _chain
 # handover.compose = _compose
 handover.map = _map
+handover.reduce = _reduce
 handover.retry = _retry
 module.exports = exports = handover
