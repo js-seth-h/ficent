@@ -103,7 +103,7 @@ describe 'handover', ()->
     f = ho [ func_mk_Err ]
 
     g = ho [
-      f.fnRetry 3
+      ho.retry 3, f
     ]
     # f (req,res,next)
     debug 'RETRY'
