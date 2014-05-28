@@ -1,9 +1,13 @@
 {
   "name": "handover",
-  "version": "0.4.4",
+  "version": "0.6.0",
   "description": "handover",
-  "main": "handover.coffee",
-  "scripts": {
+  "main": "lib",
+  "scripts": { 
+    "build": "coffee -c -b -o lib src  ",
+    "clean": "rm -r lib",
+    "prepublish": "npm run-script build",
+    "postpublish": "npm run-script clean",
     "test": "set TEST=true && mocha --compilers coffee:coffee-script/register   --reporter spec"
   },
   "repository": {

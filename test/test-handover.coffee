@@ -1,4 +1,4 @@
-ho = require '../handover'
+ho = require '../src'
 assert = require 'assert'
 util = require 'util'
 

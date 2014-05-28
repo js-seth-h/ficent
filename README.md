@@ -1,4 +1,5 @@
 handover
 ========
 
-node.js pipe-lining tool, compatible with Connect/Express, written by coffee
+> library for function flow  
+> easy to use, bisiness logic-centeric flow control
