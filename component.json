@@ -2,9 +2,16 @@
   "name": "flyway",
   "repo": "js-seth-h/flyway",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling",
-  "version": "0.0.4",
-  "keywords": ["flow control", "async", "high order function", "functional"],
-  "dependencies": {},
+  "version": "0.0.5",
+  "keywords": [
+    "flow control",
+    "async",
+    "high order function",
+    "functional"
+  ],
+  "dependencies": {
+    "visionmedia/debug": "*"
+  },
   "development": {},
   "license": "MIT",
   "main": "src/index.coffee",
