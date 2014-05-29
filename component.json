@@ -2,7 +2,7 @@
   "name": "flyway",
   "repo": "js-seth-h/flyway",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "keywords": ["flow control", "async", "high order function", "functional"],
   "dependencies": {},
   "development": {},
