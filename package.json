@@ -1,7 +1,7 @@
 {
   "name": "flyway",
-  "version": "0.1.0-1",
-  "description": "flow control for high performance, parallel, ssynchronous, easy to use, bisiness logic-centeric, robust error handling\n consists of high order function",
+  "version": "0.1.0-2",
+  "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling\n consists of high order function",
   "main": "lib",
   "scripts": { 
     "build": "coffee -c -b -o lib src  ",
