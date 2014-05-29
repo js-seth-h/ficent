@@ -20,7 +20,7 @@ _isError = (obj)->
  
 
 cutFlowsByArity = (fnFlows, arity)->
-  debug 'cutFlowsByArity  ', arity     
+  # debug 'cutFlowsByArity  ', arity     
   for fn, inx in fnFlows
     # debug 'fn.length', fn.length
     if not _isArray(fn) and fn.length is arity
@@ -46,12 +46,12 @@ joinAsyncFns = (fns, outCallback)->
     if errs.length > 0
       error = errs[0]
       error.errors = errors
-    debug 'checkJoin - ', error
+    # debug 'checkJoin - ', error
     outCallback(error, results) 
   
   for fn, inx in fns  
     do (inx)->
-      debug 'call fork', inx 
+      # debug 'call fork', inx 
       fn (err, output...)->
         output = output[0] if output.length is 1
         finished[inx] = true
@@ -115,18 +115,18 @@ runReduce = (data, fn, memo, outCallback)->
     return outCallback err if err
     runReduce others, fn, newMemo, outCallback
 
-runSerise = (data, fn, results, outCallback)->
-  # debug 'runSerise', arguments
+runSeries = (data, fn, results, outCallback)->
+  # debug 'runSeries', arguments
   return outCallback null, results if data.length is 0
   [head, others...] = data
-  fn memo, head, (err, output)->
+  fn head, (err, output)->
     return outCallback err if err
     results.push output
-    runSerise others, fn, results, outCallback
+    runSeries others, fn, results, outCallback
 
-_serise = (fn)->
+_series = (fn)->
   return (data, outCallback)-> 
-    runSerise data, fn, [], outCallback
+    runSeries data, fn, [], outCallback
 
 _map = (fn)->
   return (data, outCallback)->
@@ -159,10 +159,10 @@ _reduce = (memo, fn)->
 
 _retry = (tryLimit, fn)->
   return (args..., outCallback)->
-    debug 'fnRetry'
+    # debug 'fnRetry'
     tryCnt = 0
     fnDone = (err, output...)->
-      debug 'fnDone of fnRetry'
+      # debug 'fnDone of fnRetry'
       tryCnt++
       if err and tryCnt < tryLimit
         fn argsToCall...
@@ -186,21 +186,25 @@ _flow = (flowFns)->
     # debug 'first', first
     if first is null or first is undefined or _isError first
       err = args.shift()
-      debug 'set err = ', err
+      # debug 'set err = ', err
   
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = ()->
 
-    debug '_flow arity = ', args.length
-    debug '_flow err= ', err
+    # debug '_flow arity = ', args.length
+    # debug '_flow err= ', err
     runFlow flowFns, err, args, outCallback
 
 
 
+_flow.run = (args..., fnFlows)->
+  _flow(fnFlows) args...
  
-flyway = (hands)-> return _flow(hands)
-
+_chain.run = (args..., fnFlows)->
+  _chain(fnFlows) args...
+ 
+flyway = _flow
 flyway.fn = {}
 flyway.makeFn = {}
 
@@ -217,6 +221,8 @@ flyway.each = _map
 flyway.reduce = _reduce
 
 flyway.retry = _retry
-flyway.serise = _serise
+flyway.series = _series
+
+
 
 module.exports = exports = flyway
