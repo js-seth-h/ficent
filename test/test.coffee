@@ -419,6 +419,16 @@ describe 'run now', ()->
     ]  
 
 
+  it 'flow.run with no arg', (done)->    
+    flyway.run  [
+      (next)-> 
+        console.log 'arguments= ' ,arguments
+        next()
+      (next)-> 
+        done()
+    ]  
+
+
   it 'chain.run', (done)->    
     flyway.chain.run 5, [
       (num, next)-> 

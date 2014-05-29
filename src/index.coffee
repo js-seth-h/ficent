@@ -198,11 +198,11 @@ _flow = (flowFns)->
 
 
 
-_flow.run = (args..., fnFlows)->
-  _flow(fnFlows) args...
+_flow.run = (args..., fnFlows)-> 
+  _flow(fnFlows) args..., ()->
  
-_chain.run = (args..., fnFlows)->
-  _chain(fnFlows) args...
+_chain.run = (args..., fnFlows)-> 
+  _chain(fnFlows) args..., ()->
  
 flyway = _flow
 flyway.fn = {}
