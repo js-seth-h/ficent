@@ -172,6 +172,14 @@ _retry = (tryLimit, fn)->
     fn argsToCall...
  
 
+
+_wrap = (preFns,postFns)->
+  preFns = [preFns] unless _isArray preFns
+  postFns = [postFns] unless _isArray postFns
+  return (inFns)->
+    inFns = [inFns] unless _isArray inFns
+    return _flow [preFns..., inFns..., postFns...]
+
 _chain = (chainFns)->
   return (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
@@ -197,7 +205,6 @@ _flow = (flowFns)->
     runFlow flowFns, err, args, outCallback
 
 
-
 _flow.run = (args..., fnFlows)-> 
   _flow(fnFlows) args..., ()->
  
@@ -206,8 +213,9 @@ _chain.run = (args..., fnFlows)->
  
 flyway = _flow
 flyway.fn = {}
-flyway.makeFn = {}
+flyway.mkFn = {}
 
+ 
 # flyway.mk = 
   # retry: _retry
   # map : _map
@@ -223,6 +231,7 @@ flyway.reduce = _reduce
 flyway.retry = _retry
 flyway.series = _series
 
+flyway.wrap = _wrap
 
 
 module.exports = exports = flyway

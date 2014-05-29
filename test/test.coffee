@@ -441,3 +441,42 @@ describe 'run now', ()->
         assert.equal num, -85
         done()
     ]  
+
+
+
+
+describe 'wrap', ()->
+
+  it 'wrap test', (done)->    
+
+    init = (ctx, next)-> 
+      ctx.num = 9
+      next()
+    end = (ctx, next)-> 
+      assert.equal ctx.num, 99
+      next()
+    inFn = (ctx, next)->
+      ctx.num *= 11
+      next()
+
+    flyway.mkFn.wrap = flyway.wrap [init], [end]
+    
+    
+    flyway.mkFn.wrap([inFn]) {}, ()->
+      done()
+  it 'wrap test - no callback, no array', (done)->    
+
+    init = (ctx, next)-> 
+      ctx.num = 9
+      next()
+    end = (ctx, next)-> 
+      assert.equal ctx.num, 99
+      done()
+    inFn = (ctx, next)->
+      ctx.num *= 11
+      next()
+
+    flyway.mkFn.wrap = flyway.wrap init, end
+    
+    
+    flyway.mkFn.wrap(inFn) {}
