@@ -266,7 +266,11 @@ describe 'flow  - forkjoin', ()->
 
     ctx = {}
     
-    f = flyway [ [func1, func2] ]  
+    f = flyway [ [func1, func2, (ctx,next)-> 
+      ctx.zzz = 9
+      debug 'fj', ctx
+      next()
+     ] ]  
       
     # f (req,res,next)
     f ctx, (err, ctx)->
@@ -294,8 +298,6 @@ describe 'flow  - forkjoin', ()->
       assert ctx.b , "must exist"
 
       done()
-
-
  
   
 

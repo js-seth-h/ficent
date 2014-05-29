@@ -52,32 +52,40 @@ joinAsyncFns = (fns, outCallback)->
   
   for fn, inx in fns  
     do (inx)->
-      # debug 'call fork', inx 
+      # debug 'call fork', inx , fn.__name
       fn (err, output...)->
         output = output[0] if output.length is 1
+        
+        return outCallback new Error 'Duplicated callback call'  if finished[inx]
+
         finished[inx] = true
         results[inx] = output
         errors[inx] = err 
         checkJoin()
  
-runFork = (fnFlows, args, outCallback)->
+runFork = (fnFlows, args, outCallback)-> 
   fns = fnFlows.map (flow)->  
-    return (next)-> 
-      flow = [flow] unless _isArray flow
-      runChain flow, args, next 
+     return (next)-> 
+      # flow = [flow] unless _isArray flow '
+      flow args..., next 
+
   joinAsyncFns fns, outCallback
-  
 
 runFlow = (fnFlows, err, args, outCallback)->
+  # debug 'runFlow start', err, args
   errorHandlerArity = args.length + 2 # include err, callback
   if err
     fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
- 
+  
   return outCallback err, args... if fnFlows.length is 0 
   
   [fn, fns...] = fnFlows  
-  if _isArray fn
-    fnArr = fn
+
+  if _isArray fn 
+    fnArr = fn.map (flow)->  
+      return _flow flow if _isArray flow 
+      return flow
+
     fn = (args..., next)-> runFork fnArr, args, next 
 
   argsToCall = args
@@ -90,7 +98,10 @@ runChain = ( fnFlows, args, outCallback)->
   debug 'runChain', fnFlows, args
   [fn, fns...] = fnFlows  
   if _isArray fn
-    fnArr = fn
+    fnArr = fn.map (flow)->  
+      return _chain flow if _isArray flow 
+      return flow
+
     fn = (args..., next)-> runFork fnArr, args, next 
   fn args..., (err, output...)->
     return outCallback err if err   
