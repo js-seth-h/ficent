@@ -106,6 +106,28 @@ runChain = ( fnFlows, args, outCallback)->
     runChain fns, output, outCallback 
  
 
+
+runReduce = (data, fn, memo, outCallback)->
+  # debug 'runReduce', arguments
+  return outCallback null, memo if data.length is 0
+  [head, others...] = data
+  fn memo, head, (err, newMemo)->
+    return outCallback err if err
+    runReduce others, fn, newMemo, outCallback
+
+runSerise = (data, fn, results, outCallback)->
+  # debug 'runSerise', arguments
+  return outCallback null, results if data.length is 0
+  [head, others...] = data
+  fn memo, head, (err, output)->
+    return outCallback err if err
+    results.push output
+    runSerise others, fn, results, outCallback
+
+_serise = (fn)->
+  return (data, outCallback)-> 
+    runSerise data, fn, [], outCallback
+
 _map = (fn)->
   return (data, outCallback)->
 #     _map arr, fn, next
@@ -129,14 +151,6 @@ _map = (fn)->
       joinAsyncFns fns, (err, results)-> 
         outCallback err, result
    
-
-runReduce = (data, fn, memo, outCallback)->
-  debug 'runReduce', arguments
-  return outCallback null, memo if data.length is 0
-  [head, others...] = data
-  fn memo, head, (err, newMemo)->
-    return outCallback err if err
-    runReduce others, fn, newMemo, outCallback
       
 _reduce = (memo, fn)->
   return (data, outCallback)->
@@ -184,30 +198,25 @@ _flow = (flowFns)->
 
 
 
-make = 
-  http: ()->
-    return (req,res,next)->
-      req.tmp = req.tmp || {}
-      req.data = req.data || {}
-      
-      res.tmp = res.tmp || {}
-      res.data = res.data || {}
-      next()
-
-
  
-handover = (hands)-> return _flow(hands)
+flyway = (hands)-> return _flow(hands)
 
-handover.hands = {}
-handover.make = make
-# handover.mk = 
+flyway.fn = {}
+flyway.makeFn = {}
+
+# flyway.mk = 
   # retry: _retry
   # map : _map
-handover.flow = _flow
-# handover.fnForkJoin = fnForkJoin
-handover.chain = _chain
-# handover.compose = _compose
-handover.map = _map
-handover.reduce = _reduce
-handover.retry = _retry
-module.exports = exports = handover
+flyway.flow = _flow
+# flyway.fnForkJoin = fnForkJoin
+flyway.chain = _chain
+# flyway.compose = _compose
+flyway.map = _map
+flyway.each = _map
+
+flyway.reduce = _reduce
+
+flyway.retry = _retry
+flyway.serise = _serise
+
+module.exports = exports = flyway
