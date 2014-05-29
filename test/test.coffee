@@ -320,7 +320,7 @@ describe 'chain', ()->
       assert.equal b, 2
       assert.equal c, 3
       done()
-  it 'fork', (done)-> 
+  it 'fork in chain', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next
       # return next new Error 'E'
@@ -343,6 +343,26 @@ describe 'chain', ()->
       # assert.equal output[0], 22
       # assert.equal output[1][0], 5
       done()
+
+  it 'fork', (done)-> 
+
+    f3 = (a, b, c, d, next)-> next null, a + b +  c + d
+    f4 = (a, b, c, d, next)-> next null, a - b, c - d
+     # f5 = (arr, next)-> flyway.map arr, fn, next
+    fn = flyway.fork [f3, f4]
+
+    fn 2,3, 4, 5, (err, output)->
+      debug 'chain out', arguments
+      # console.log 'err ', err
+      # console.log   output
+      assert.equal err, null
+      assert.equal output[0], 14
+      assert.equal output[1][0], -1 
+      assert.equal output[1][1], -1 
+      # assert.equal output[0], 22
+      # assert.equal output[1][0], 5
+      done() 
+
   it 'map chain', (done)-> 
     f1 = (a, b, next)-> 
       # console.log 'f1', a, b, next

@@ -19,6 +19,7 @@ _isError = (obj)->
   _toString.call(obj) is "[object Error]"
  
 
+
 cutFlowsByArity = (fnFlows, arity)->
   # debug 'cutFlowsByArity  ', arity     
   for fn, inx in fnFlows
@@ -59,14 +60,13 @@ joinAsyncFns = (fns, outCallback)->
         errors[inx] = err 
         checkJoin()
  
-
-runForkFlow = (fnFlows, args, outCallback)->
+runFork = (fnFlows, args, outCallback)->
   fns = fnFlows.map (flow)->  
     return (next)-> 
       flow = [flow] unless _isArray flow
-      runFlow flow, null, args, next 
+      runChain flow, args, next 
   joinAsyncFns fns, outCallback
-
+  
 
 runFlow = (fnFlows, err, args, outCallback)->
   errorHandlerArity = args.length + 2 # include err, callback
@@ -78,28 +78,20 @@ runFlow = (fnFlows, err, args, outCallback)->
   [fn, fns...] = fnFlows  
   if _isArray fn
     fnArr = fn
-    fn = (args..., next)-> runForkFlow fnArr, args, next 
+    fn = (args..., next)-> runFork fnArr, args, next 
 
   argsToCall = args
   argsToCall = [err].concat args if fn.length is errorHandlerArity
 
   fn argsToCall..., (err)->
-    runFlow fns, err, args, outCallback 
-  
-
-runForkChain = (fnFlows, args, outCallback)->
-  fns = fnFlows.map (flow)->  
-    return (next)-> 
-      flow = [flow] unless _isArray flow
-      runChain flow, args, next 
-  joinAsyncFns fns, outCallback
-
+    runFlow fns, err, args, outCallback  
+    
 runChain = ( fnFlows, args, outCallback)->
   debug 'runChain', fnFlows, args
   [fn, fns...] = fnFlows  
   if _isArray fn
     fnArr = fn
-    fn = (args..., next)-> runForkChain fnArr, args, next 
+    fn = (args..., next)-> runFork fnArr, args, next 
   fn args..., (err, output...)->
     return outCallback err if err   
     return outCallback null, output... if fns.length is 0 
@@ -180,6 +172,14 @@ _wrap = (preFns,postFns)->
     inFns = [inFns] unless _isArray inFns
     return _flow [preFns..., inFns..., postFns...]
 
+_fork = (flowFns)->
+  return (args..., outCallback)->      
+    if typeof outCallback isnt 'function'
+      args.push outCallback
+      outCallback = ()-> 
+    runFork flowFns, args, outCallback
+
+    
 _chain = (chainFns)->
   return (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
@@ -207,14 +207,17 @@ _flow = (flowFns)->
 
 _flow.run = (args..., fnFlows)-> 
   _flow(fnFlows) args..., ()->
- 
+  
 _chain.run = (args..., fnFlows)-> 
   _chain(fnFlows) args..., ()->
- 
+
 flyway = _flow
 flyway.fn = {}
 flyway.mkFn = {}
 
+
+
+# 함수 2개를 붙이는 방법으로 Conext(Flow)와  값전달(Chain)이 있다.
  
 # flyway.mk = 
   # retry: _retry
@@ -223,14 +226,26 @@ flyway.flow = _flow
 # flyway.fnForkJoin = fnForkJoin
 flyway.chain = _chain
 # flyway.compose = _compose
+
+
+# 다중화(병렬 실행)에는, 입력을 다중화하거나, 함수를 다중화 할수 있다.
 flyway.map = _map
+flyway.fork = _fork
+
 flyway.each = _map
 
+# 다중화된 결과를 합치는 건 리듀스 뿐...
 flyway.reduce = _reduce
 
-flyway.retry = _retry
+# 다중 입력에 대한 직렬 수행.
 flyway.series = _series
+# 다수 함수에 대한 직렬 수행은 flow나  chain에서 가능하다.
+#
 
+# 함수를 수정할수 있다. 
+# 반복
+flyway.retry = _retry
+# 앞뒤로 감싸기.
 flyway.wrap = _wrap
 
 
