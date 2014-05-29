@@ -2,13 +2,13 @@
   "name": "flyway",
   "repo": "js-seth-h/flyway",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "keywords": ["flow control", "async", "high order function", "functional"],
   "dependencies": {},
   "development": {},
   "license": "MIT",
-  "main": "src/index.coffee",
+  "main": "lib/index.js",
   "scripts": [
-    "src/*.coffee"
+    "lib/*.js"
   ]
 }
