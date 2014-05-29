@@ -1,7 +1,7 @@
 {
-  "name": "handover",
-  "version": "0.6.0",
-  "description": "handover",
+  "name": "flyway",
+  "version": "0.1.0",
+  "description": "",
   "main": "lib",
   "scripts": { 
     "build": "coffee -c -b -o lib src  ",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/js-seth-h/handover.git"
+    "url": "git://github.com/js-seth-h/flyway.git"
   },
   "keywords": [
     "web",
@@ -26,9 +26,9 @@
   "author": "js.seth.h@gmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/js-seth-h/handover/issues"
+    "url": "https://github.com/js-seth-h/flyway/issues"
   },
-  "homepage": "https://github.com/js-seth-h/handover",
+  "homepage": "https://github.com/js-seth-h/flyway",
   "dependencies": {
     "debug": "^0.8.1"
   },

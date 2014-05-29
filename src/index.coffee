@@ -1,5 +1,5 @@
 # util = require 'util'
-debug =  require('debug')('handover')
+debug =  require('debug')('flyway')
 
 # Error Jump 기능
 # 직/병렬 동시 서술
