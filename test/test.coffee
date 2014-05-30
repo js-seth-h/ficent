@@ -89,6 +89,23 @@ describe 'flow', ()->
       assert ctx.b is undefined , "must not exist"
 
       done()
+  it 'support error but no handler', (done)-> 
+
+    ctx = {}
+    func_mk_Err = (ctx, next)->
+      debug 'mk Err'
+      next new Error 'FAKE' 
+
+    f = flyway [ func1, func_mk_Err, func2]
+      
+    # f (req,res,next)
+    f ctx, (err, ctx)->
+      debug 'end ', arguments 
+      assert util.isError err, 'no error'
+      assert ctx.a , "must exist"
+      assert ctx.b is undefined , "must not exist"
+
+      done()
 
 
 describe 'retry', ()->    
