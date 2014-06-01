@@ -36,82 +36,237 @@ unifyErrors = (errors)->
     error.errors = errors
   return error
 
-callback = (strict = true)->
-  cb = (err, values...)->
-    if cb.called and strict
-      throw new Error "should call `callback` once"
-    cb.called = true
-    cb.err = err
-    cb.values = values
-    cb.callThens()
-  cb.called = false
-  cb.chainFn = []
+# callback = (strict = true)->
+#   cb = (err, values...)->
+#     if cb.called and strict
+#       throw new Error "should call `callback` once"
+#     cb.called = true
+#     cb.err = err
+#     cb.values = values
+#     cb.callThens()
+#   cb.called = false
+#   cb.chainFn = []
 
-  cb.done = (err, values...)->
-    cb err, values...
-  cb.then = (fn)->
-    if cb.called
-      fn cb.err, cb.values...
-    else
-      cb.chainFn.push fn
-  cb.callThens = ()->
-    for fn in cb.chainFn
-      fn cb.err, cb.values...
-  return cb
+#   cb.done = (err, values...)->
+#     cb err, values...
+#   cb.then = (fn)->
+#     if cb.called
+#       fn cb.err, cb.values...
+#     else
+#       cb.chainFn.push fn
+#   cb.callThens = ()->
+#     for fn in cb.chainFn
+#       fn cb.err, cb.values...
+#   return cb
 
-callback.waitAll = (otherCallbacks...)->
-  cb = callback()
+# callback.waitAll = (otherCallbacks...)->
+#   cb = callback()
 
-  if otherCallbacks
-    for oc in otherCallbacks
-      oc.then ()->
-        allDone = otherCallbacks.every (o)-> o.called
-        return unless allDone 
-        errors = otherCallbacks.map (o)-> o.err
-        values = otherCallbacks.map (o)-> o.values
-        error = unifyErrors errors
-        cb(error, values)
-  return cb
+#   if otherCallbacks
+#     for oc in otherCallbacks
+#       oc.then ()->
+#         allDone = otherCallbacks.every (o)-> o.called
+#         return unless allDone 
+#         errors = otherCallbacks.map (o)-> o.err
+#         values = otherCallbacks.map (o)-> o.values
+#         error = unifyErrors errors
+#         cb(error, values)
+#   return cb
 
-joinAsyncFns = (fns, outCallback)->
-  l = fns.length 
-  errors = [0...l].map ()-> undefined
-  results = errors.map ()-> undefined
-  finished = errors.map ()-> false
+# class CallbackJoiner
+#   constructor: (count)->
+#     @done = false
+#     @allFnished = false
+#     @finished = [] 
+#     @errors = []
+#     @results = []
+#     @callbacks = []
+#     @setCount count
+#   setCount: (@count)->
+#     while @callbacks.length < @count
+#       # inx = Joiner.finished.length
+#       @addSlot()
 
-  # debug 'errors', errors
-  # debug 'results', results
-  # debug 'finished', finished
+#   addSlot: ()->
+#     inx = @finished.length
+#     @finished.push false
+#     @errors.push undefined
+#     @results.push undefined
+#     @callbacks.push (err, output...)-> 
+#       if @finished[inx]
+#         throw new Error 'Duplicated callback call'  
+#       @finished[inx] = true
+#       @results[inx] = output
+#       @errors[inx] = err
+#       @allFnished = @finished.every (v)-> v
+#       @callThen() if @allFnished and Joiner.outCallback
 
-  checkJoin = ()->
-    return unless finished.every (v)-> v
-    errs = errors.filter (err)-> err 
-    # debug 'errs = ', errs
-    # errors = undefined unless hasErr
-    error = unifyErrors errors
-    # debug 'checkJoin - ', error
-    outCallback(error, results) 
-  
-  for fn, inx in fns  
-    do (inx)->
-      # debug 'call fork', inx , fn.__name
-      fn (err, output...)->
-        output = output[0] if output.length is 1
-        
-        return outCallback new Error 'Duplicated callback call'  if finished[inx]
 
+  # checkJoin = ()->
+  #   return unless finished.every (v)-> v
+  #   errs = errors.filter (err)-> err 
+  #   error = unifyErrors errors
+  #   outCallback(error, results) 
+
+
+  # Joiner =  
+  #   # errors : [0...count].map ()-> undefined
+  #   # results : errors.map ()-> undefined
+  #   # finished : errors.map ()-> false
+  #   callbackOf: (inx)->
+  #     Joiner.callbacks[inx]
+
+  #   mkCallback : ()->
+  #     inx = Joiner.finished.length
+  #     Joiner.finished.push false
+  #     Joiner.errors.push undefined
+  #     Joiner.results.push undefined
+  #     Joiner.callbacks.push (err, output...)-> 
+  #       if Joiner.finished[inx]
+  #         throw new Error 'Duplicated callback call'  
+  #       Joiner.finished[inx] = true
+  #       Joiner.results[inx] = output
+  #       Joiner.errors[inx] = err
+  #       Joner.allFnished = Joner.finished.every (v)-> v
+  #       Joiner.callThen() if Joiner.allFnished and Joiner.outCallback
+  #   then : (outCallback)->
+  #     Joiner.outCallback = outCallback
+  #     if Joiner.allFnished
+  #       Joiner.callThen()
+  #   callThen : ()->
+  #     error = unifyErrors Joiner.errors
+  #     Joiner.done = true
+  #     Joiner.outCallback error, Joiner.results
+    
+  # mkCallback = ()-> 
+  #   return (err, values)->
+
+
+
+_join = (strict = true)->
+  errors = []
+  results = []
+  finished = [] 
+  outFn = undefined
+  resultsObj = {}
+  callOut = ()->   
+    allFnished = finished.every (v)-> v
+    if allFnished and outFn
+      err = unifyErrors errors
+      results.obj = resultsObj
+      outFn err, results
+
+  fns = 
+    in :(varName = null)->
+      varName = varName
+      inx = errors.length
+      errors.push undefined
+      results.push undefined
+      finished.push false
+
+      if varName
+        resultsObj[varName] = resultsObj[varName]  ||  [] 
+        varInx = results.length
+        resultsObj[varName].push undefined
+      return (err, values...)->
+        throw new Error 'should call `callback` once' if finished[inx] and strict
+        errors[inx] = err
+        values = values[0] if values.length is 1
+        results[inx] = values
+        if varName
+          resultsObj[varName][inx] = values
         finished[inx] = true
-        results[inx] = output
-        errors[inx] = err 
-        checkJoin()
+        callOut()
+    out: (fn)->
+      outFn = fn
+      callOut()
+  return fns
+
+
+# joinAsyncFns2 = (fns, outCallback)->
+#   l = fns.length 
+#   errors = [0...l].map ()-> undefined
+#   results = errors.map ()-> undefined
+#   finished = errors.map ()-> false
+
+#   # debug 'errors', errors
+#   # debug 'results', results
+#   # debug 'finished', finished
+
+#   checkJoin = ()->
+#     return unless finished.every (v)-> v
+#     errs = errors.filter (err)-> err 
+#     # debug 'errs = ', errs
+#     # errors = undefined unless hasErr
+#     error = unifyErrors errors
+#     # debug 'checkJoin - ', error
+#     outCallback(error, results) 
+  
+#   for fn, inx in fns  
+#     do (inx)->
+#       # debug 'call fork', inx , fn.__name
+#       fn (err, output...)->
+#         output = output[0] if output.length is 1
+        
+#         return outCallback new Error 'Duplicated callback call'  if finished[inx]
+
+#         finished[inx] = true
+#         results[inx] = output
+#         errors[inx] = err 
+#         checkJoin()
+
+
+# joinAsyncFns = (fns, outCallback)->
+#   # l = fns.length 
+#   # errors = [0...l].map ()-> undefined
+#   # results = errors.map ()-> undefined
+#   # finished = errors.map ()-> false
+
+#   # debug 'errors', errors
+#   # debug 'results', results
+#   # debug 'finished', finished
+
+#   # checkJoin = ()->
+#   #   return unless finished.every (v)-> v
+#   #   errs = errors.filter (err)-> err 
+#   #   # debug 'errs = ', errs
+#   #   # errors = undefined unless hasErr
+#   #   error = unifyErrors errors
+#   #   # debug 'checkJoin - ', error
+#   #   outCallback(error, results) 
+
+#   join = flyway.join()
+  
+#   for fn in fns
+#     fn join.in()
+#   join.out outCallback
+
+
+#   # for fn, inx in fns  
+#   #   do (inx)->
+#   #     # debug 'call fork', inx , fn.__name
+#   #     fn (err, output...)->
+#   #       output = output[0] if output.length is 1
+        
+#   #       return outCallback new Error 'Duplicated callback call'  if finished[inx]
+
+#   #       finished[inx] = true
+#   #       results[inx] = output
+#   #       errors[inx] = err 
+#   #       checkJoin()
  
 runFork = (fnFlows, args, outCallback)-> 
-  fns = fnFlows.map (flow)->  
-     return (next)-> 
-      # flow = [flow] unless _isArray flow '
-      flow args..., next 
+  join = flyway.join()
+  fnFlows.forEach (flow)->
+    flow args..., join.in()
+  join.out outCallback
 
-  joinAsyncFns fns, outCallback
+  # fns = fnFlows.map (flow)->  
+  #    return (next)-> 
+  #     # flow = [flow] unless _isArray flow '
+  #     flow args..., next 
+
+  # joinAsyncFns fns, outCallback
 
 runFlow = (fnFlows, err, args, outCallback)->
   # debug 'runFlow start', err, args
@@ -177,24 +332,43 @@ _map = (fn)->
   return (data, outCallback)->
 #     _map arr, fn, next
 # _map = (data, fn, outCallback)->  
+    join = flyway.join()
     if _isArray data 
-      fns = data.map (args)->  
+      data.forEach (args)->
         args = [args] unless _isArray args
-        return (next)->   
-          fn args..., next 
-      joinAsyncFns fns, outCallback
+        fn args..., join.in()
+
+      # fns = data.map (args)->  
+      #   args = [args] unless _isArray args
+      #   return (next)->   
+      #     fn args..., next 
+      # joinAsyncFns fns, outCallback
     else
-      fns = []
-      result = {}
       for own key, value of data
-        do (key, value)->
-          fns.push (next)->
-            fn key, value, (err, output...)->
-              output = output[0] if output.length is 1
-              result[key] = output
-              next err, output...
-      joinAsyncFns fns, (err, results)-> 
-        outCallback err, result
+        fn key, value, join.in(key)
+
+      _outCallback = outCallback
+      outCallback= (err, results, next)->
+        # debug 'remapper out = ', results
+        next err if err
+        # out = {}
+        # for own key, value of data
+          # out[key.toString()] = results[key.toString()][0]
+        _outCallback null, results.obj
+
+    join.out outCallback
+
+      # fns = []
+      # result = {}
+      # for own key, value of data
+      #   do (key, value)->
+      #     fns.push (next)->
+      #       fn key, value, (err, output...)->
+      #         output = output[0] if output.length is 1
+      #         result[key] = output
+      #         next err, output...
+      # joinAsyncFns fns, (err, results)-> 
+      #   outCallback err, result
    
       
 _reduce = (memo, fn)->
@@ -302,7 +476,7 @@ flyway.retry = _retry
 flyway.wrap = _wrap
 
 
-flyway.callback = callback
-
+# flyway.callback = callback
+flyway.join = _join
 
 module.exports = exports = flyway

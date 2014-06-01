@@ -198,6 +198,7 @@ describe 'retry', ()->
       assert ctx.tryCnt is 2 , 'try 2 and success' 
       done() 
 
+
 describe 'map', ()->   
   it 'map', (done)->    
     data = [2..5]
@@ -205,8 +206,8 @@ describe 'map', ()->
       # console.log 'fn', n
       next null, n * n
     flyway.map(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
+      console.log 'err ' , errs
+      console.log 'results ' , results
       assert.equal results[0], 4
       done()
 
@@ -271,12 +272,11 @@ describe 'map', ()->
       inputs[x] = 
         num : x 
     flyway.map(g) inputs,  (errs, results )->      
-      debug 'results', errs, results 
+      debug 'results err', errs, results 
       assert util.isError errs, 'error'
       assert results[2].num is 40, 'not correct '
       done()
-
-
+ 
 
 describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
@@ -315,7 +315,7 @@ describe 'flow  - forkjoin', ()->
       assert ctx.b , "must exist"
 
       done()
- 
+  
   
 
 describe 'chain', ()->     
@@ -425,9 +425,7 @@ describe 'chain', ()->
       # assert.equal output[0], 22
       # assert.equal output[1][0], 5
       done()
-
-
-
+ 
 
 describe 'series', ()->   
   it 'series', (done)->    
@@ -520,85 +518,99 @@ describe 'wrap', ()->
     
     flyway.mkFn.wrap(inFn) {}
 
-describe 'callback', ()->
-  it 'should take callback', (done)->
+# describe 'callback', ()->
+#   it 'should take callback', (done)->
 
-    fire = (next)->
-      setTimeout next, 50
+#     fire = (next)->
+#       setTimeout next, 50
 
-    C1 = flyway.callback()
-    fire C1
-    C1.then ()->
-      done()
-  it 'should take passed callback', (done)->
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then ()->
+#       done()
+#   it 'should take passed callback', (done)->
 
-    fire = (next)-> next()
-    C1 = flyway.callback()
-    fire C1
-    C1.then ()->
-      done()
-  it 'should pass output when passed callback', (done)->
+#     fire = (next)-> next()
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then ()->
+#       done()
+#   it 'should pass output when passed callback', (done)->
 
-    fire = (next)-> next null, 1,2,3,4,5
-    C1 = flyway.callback()
-    fire C1
-    C1.then (err, args...)->
+#     fire = (next)-> next null, 1,2,3,4,5
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then (err, args...)->
 
-      expect(args).toEqual [1,2,3,4,5]
-      done()
+#       expect(args).toEqual [1,2,3,4,5]
+#       done()
 
-  it 'should take callback and output', (done)->
+#   it 'should take callback and output', (done)->
 
-    fire = (next)->
-      c = ()->  next null, 1,2,3,4,5
-      setTimeout c, 50
-      # c()
+#     fire = (next)->
+#       c = ()->  next null, 1,2,3,4,5
+#       setTimeout c, 50
+#       # c()
       
-    C1 = flyway.callback()
-    fire C1
-    C1.then (err, args...)->
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then (err, args...)->
 
-      expect(args).toEqual [1,2,3,4,5]
-      done()
+#       expect(args).toEqual [1,2,3,4,5]
+#       done()
 
 
-  it 'should wait all', (done)->
+#   it 'should wait all', (done)->
 
-    fire1 = (next)->
-      c = ()->  next null, 1,2,3,4
-      setTimeout c, 50
-      # c()
+#     fire1 = (next)->
+#       c = ()->  next null, 1,2,3,4
+#       setTimeout c, 50
+#       # c()
       
-    fire2 = (next)->
-      c = ()->  next null, 9,10,11
-      setTimeout c, 50
-      # c()
+#     fire2 = (next)->
+#       c = ()->  next null, 9,10,11
+#       setTimeout c, 50
+#       # c()
       
-    C1 = flyway.callback()
-    fire1 C1
-    C2 = flyway.callback()
-    fire2 C2
-    flyway.callback.waitAll(C1,C2).then (err, args)->
-      expect(args).toEqual [[1,2,3,4], [9,10,11]]
-      done()
+#     C1 = flyway.callback()
+#     fire1 C1
+#     C2 = flyway.callback()
+#     fire2 C2
+#     flyway.callback.waitAll(C1,C2).then (err, args)->
+#       expect(args).toEqual [[1,2,3,4], [9,10,11]]
+#       done()
 
-  it 'should work with done', (done)->
+#   it 'should work with done', (done)->
 
-    fire = (next)-> next.done()
-    C1 = flyway.callback()
-    fire C1
-    C1.then ()->
-      done()
+#     fire = (next)-> next.done()
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then ()->
+#       done()
 
-  it 'should pass error', (done)->
+#   it 'should pass error', (done)->
 
-    fire = (next)-> 
-      c = ()->  next new Error 'FAKE'
-      setTimeout c, 50
-      # c()
+#     fire = (next)-> 
+#       c = ()->  next new Error 'FAKE'
+#       setTimeout c, 50
+#       # c()
 
-    C1 = flyway.callback()
-    fire C1
-    C1.then (err)->
-      expect(err.name).toBe 'Error'
-      done()
+#     C1 = flyway.callback()
+#     fire C1
+#     C1.then (err)->
+#       expect(err.name).toBe 'Error'
+#       done()
+
+
+
+# describe 'join', ()->
+
+#   it 'should work', (done)->
+
+#     join = flyway.join()
+
+#     join.in()
+#     join.in()
+
+
+#     join.out (err, values...)->
