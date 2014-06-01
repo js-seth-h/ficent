@@ -519,3 +519,86 @@ describe 'wrap', ()->
     
     
     flyway.mkFn.wrap(inFn) {}
+
+describe 'callback', ()->
+  it 'should take callback', (done)->
+
+    fire = (next)->
+      setTimeout next, 50
+
+    C1 = flyway.callback()
+    fire C1
+    C1.then ()->
+      done()
+  it 'should take passed callback', (done)->
+
+    fire = (next)-> next()
+    C1 = flyway.callback()
+    fire C1
+    C1.then ()->
+      done()
+  it 'should pass output when passed callback', (done)->
+
+    fire = (next)-> next null, 1,2,3,4,5
+    C1 = flyway.callback()
+    fire C1
+    C1.then (err, args...)->
+
+      expect(args).toEqual [1,2,3,4,5]
+      done()
+
+  it 'should take callback and output', (done)->
+
+    fire = (next)->
+      c = ()->  next null, 1,2,3,4,5
+      setTimeout c, 50
+      # c()
+      
+    C1 = flyway.callback()
+    fire C1
+    C1.then (err, args...)->
+
+      expect(args).toEqual [1,2,3,4,5]
+      done()
+
+
+  it 'should wait all', (done)->
+
+    fire1 = (next)->
+      c = ()->  next null, 1,2,3,4
+      setTimeout c, 50
+      # c()
+      
+    fire2 = (next)->
+      c = ()->  next null, 9,10,11
+      setTimeout c, 50
+      # c()
+      
+    C1 = flyway.callback()
+    fire1 C1
+    C2 = flyway.callback()
+    fire2 C2
+    flyway.callback.waitAll(C1,C2).then (err, args)->
+      expect(args).toEqual [[1,2,3,4], [9,10,11]]
+      done()
+
+  it 'should work with done', (done)->
+
+    fire = (next)-> next.done()
+    C1 = flyway.callback()
+    fire C1
+    C1.then ()->
+      done()
+
+  it 'should pass error', (done)->
+
+    fire = (next)-> 
+      c = ()->  next new Error 'FAKE'
+      setTimeout c, 50
+      # c()
+
+    C1 = flyway.callback()
+    fire C1
+    C1.then (err)->
+      expect(err.name).toBe 'Error'
+      done()

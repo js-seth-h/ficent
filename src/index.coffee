@@ -28,6 +28,51 @@ cutFlowsByArity = (fnFlows, arity)->
       return fnFlows[inx..] 
   return []
 
+unifyErrors = (errors)->
+  errs = errors.filter (err)-> err 
+  error = undefined
+  if errs.length > 0
+    error = errs[0]
+    error.errors = errors
+  return error
+
+callback = (strict = true)->
+  cb = (err, values...)->
+    if cb.called and strict
+      throw new Error "should call `callback` once"
+    cb.called = true
+    cb.err = err
+    cb.values = values
+    cb.callThens()
+  cb.called = false
+  cb.chainFn = []
+
+  cb.done = (err, values...)->
+    cb err, values...
+  cb.then = (fn)->
+    if cb.called
+      fn cb.err, cb.values...
+    else
+      cb.chainFn.push fn
+  cb.callThens = ()->
+    for fn in cb.chainFn
+      fn cb.err, cb.values...
+  return cb
+
+callback.waitAll = (otherCallbacks...)->
+  cb = callback()
+
+  if otherCallbacks
+    for oc in otherCallbacks
+      oc.then ()->
+        allDone = otherCallbacks.every (o)-> o.called
+        return unless allDone 
+        errors = otherCallbacks.map (o)-> o.err
+        values = otherCallbacks.map (o)-> o.values
+        error = unifyErrors errors
+        cb(error, values)
+  return cb
+
 joinAsyncFns = (fns, outCallback)->
   l = fns.length 
   errors = [0...l].map ()-> undefined
@@ -43,10 +88,7 @@ joinAsyncFns = (fns, outCallback)->
     errs = errors.filter (err)-> err 
     # debug 'errs = ', errs
     # errors = undefined unless hasErr
-    error = undefined
-    if errs.length > 0
-      error = errs[0]
-      error.errors = errors
+    error = unifyErrors errors
     # debug 'checkJoin - ', error
     outCallback(error, results) 
   
@@ -258,6 +300,9 @@ flyway.series = _series
 flyway.retry = _retry
 # 앞뒤로 감싸기.
 flyway.wrap = _wrap
+
+
+flyway.callback = callback
 
 
 module.exports = exports = flyway

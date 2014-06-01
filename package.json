@@ -8,7 +8,7 @@
     "clean": "rm -r lib",
     "prepublish": "npm run-script build",
     "postpublish": "npm run-script clean",
-    "test": "set TEST=true && mocha --compilers coffee:coffee-script/register   --reporter spec"
+    "test": "jasmine-node --coffee  --verbose spec"
   },
   "repository": {
     "type": "git",
