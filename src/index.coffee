@@ -34,116 +34,72 @@ unifyErrors = (errors)->
   if errs.length > 0
     error = errs[0]
     error.errors = errors
-  return error
+  return error  
+ 
+runFork = (fnFlows, args, outCallback)-> 
+  join = flyway.join()
+  fnFlows.forEach (flow)->
+    flow args..., join.in()
+  join.out outCallback 
 
-# callback = (strict = true)->
-#   cb = (err, values...)->
-#     if cb.called and strict
-#       throw new Error "should call `callback` once"
-#     cb.called = true
-#     cb.err = err
-#     cb.values = values
-#     cb.callThens()
-#   cb.called = false
-#   cb.chainFn = []
+runFlow = (fnFlows, err, args, outCallback)->
+  # debug 'runFlow start', err, args
+  errorHandlerArity = args.length + 2 # include err, callback
+  if err
+    fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
+  
+  return outCallback err, args... if fnFlows.length is 0 
+  
+  [fn, fns...] = fnFlows  
 
-#   cb.done = (err, values...)->
-#     cb err, values...
-#   cb.then = (fn)->
-#     if cb.called
-#       fn cb.err, cb.values...
-#     else
-#       cb.chainFn.push fn
-#   cb.callThens = ()->
-#     for fn in cb.chainFn
-#       fn cb.err, cb.values...
-#   return cb
+  if _isArray fn 
+    fnArr = fn.map (flow)->  
+      return _fn.flow flow if _isArray flow 
+      return flow
 
-# callback.waitAll = (otherCallbacks...)->
-#   cb = callback()
+    fn = (args..., next)-> runFork fnArr, args, next 
 
-#   if otherCallbacks
-#     for oc in otherCallbacks
-#       oc.then ()->
-#         allDone = otherCallbacks.every (o)-> o.called
-#         return unless allDone 
-#         errors = otherCallbacks.map (o)-> o.err
-#         values = otherCallbacks.map (o)-> o.values
-#         error = unifyErrors errors
-#         cb(error, values)
-#   return cb
+  argsToCall = args
+  argsToCall = [err].concat args if fn.length is errorHandlerArity
 
-# class CallbackJoiner
-#   constructor: (count)->
-#     @done = false
-#     @allFnished = false
-#     @finished = [] 
-#     @errors = []
-#     @results = []
-#     @callbacks = []
-#     @setCount count
-#   setCount: (@count)->
-#     while @callbacks.length < @count
-#       # inx = Joiner.finished.length
-#       @addSlot()
-
-#   addSlot: ()->
-#     inx = @finished.length
-#     @finished.push false
-#     @errors.push undefined
-#     @results.push undefined
-#     @callbacks.push (err, output...)-> 
-#       if @finished[inx]
-#         throw new Error 'Duplicated callback call'  
-#       @finished[inx] = true
-#       @results[inx] = output
-#       @errors[inx] = err
-#       @allFnished = @finished.every (v)-> v
-#       @callThen() if @allFnished and Joiner.outCallback
-
-
-  # checkJoin = ()->
-  #   return unless finished.every (v)-> v
-  #   errs = errors.filter (err)-> err 
-  #   error = unifyErrors errors
-  #   outCallback(error, results) 
-
-
-  # Joiner =  
-  #   # errors : [0...count].map ()-> undefined
-  #   # results : errors.map ()-> undefined
-  #   # finished : errors.map ()-> false
-  #   callbackOf: (inx)->
-  #     Joiner.callbacks[inx]
-
-  #   mkCallback : ()->
-  #     inx = Joiner.finished.length
-  #     Joiner.finished.push false
-  #     Joiner.errors.push undefined
-  #     Joiner.results.push undefined
-  #     Joiner.callbacks.push (err, output...)-> 
-  #       if Joiner.finished[inx]
-  #         throw new Error 'Duplicated callback call'  
-  #       Joiner.finished[inx] = true
-  #       Joiner.results[inx] = output
-  #       Joiner.errors[inx] = err
-  #       Joner.allFnished = Joner.finished.every (v)-> v
-  #       Joiner.callThen() if Joiner.allFnished and Joiner.outCallback
-  #   then : (outCallback)->
-  #     Joiner.outCallback = outCallback
-  #     if Joiner.allFnished
-  #       Joiner.callThen()
-  #   callThen : ()->
-  #     error = unifyErrors Joiner.errors
-  #     Joiner.done = true
-  #     Joiner.outCallback error, Joiner.results
+  fn argsToCall..., (err)->
+    runFlow fns, err, args, outCallback  
     
-  # mkCallback = ()-> 
-  #   return (err, values)->
+runChain = ( fnFlows, args, outCallback)->
+  debug 'runChain', fnFlows, args
+  [fn, fns...] = fnFlows  
+  if _isArray fn
+    fnArr = fn.map (flow)->  
+      return _fn.chain flow if _isArray flow 
+      return flow
+
+    fn = (args..., next)-> runFork fnArr, args, next 
+  fn args..., (err, output...)->
+    return outCallback err if err   
+    return outCallback null, output... if fns.length is 0 
+    runChain fns, output, outCallback 
+ 
 
 
+runReduce = (data, fn, memo, outCallback)->
+  # debug 'runReduce', arguments
+  return outCallback null, memo if data.length is 0
+  [head, others...] = data
+  fn memo, head, (err, newMemo)->
+    return outCallback err if err
+    runReduce others, fn, newMemo, outCallback
 
-_join = (strict = true)->
+runSeries = (data, fn, results, outCallback)->
+  # debug 'runSeries', arguments
+  return outCallback null, results if data.length is 0
+  [head, others...] = data
+  fn head, (err, output)->
+    return outCallback err if err
+    results.push output
+    runSeries others, fn, results, outCallback
+
+_fn = {}
+_fn.join = (strict = true)->
   errors = []
   results = []
   finished = [] 
@@ -183,152 +139,11 @@ _join = (strict = true)->
   return fns
 
 
-# joinAsyncFns2 = (fns, outCallback)->
-#   l = fns.length 
-#   errors = [0...l].map ()-> undefined
-#   results = errors.map ()-> undefined
-#   finished = errors.map ()-> false
-
-#   # debug 'errors', errors
-#   # debug 'results', results
-#   # debug 'finished', finished
-
-#   checkJoin = ()->
-#     return unless finished.every (v)-> v
-#     errs = errors.filter (err)-> err 
-#     # debug 'errs = ', errs
-#     # errors = undefined unless hasErr
-#     error = unifyErrors errors
-#     # debug 'checkJoin - ', error
-#     outCallback(error, results) 
-  
-#   for fn, inx in fns  
-#     do (inx)->
-#       # debug 'call fork', inx , fn.__name
-#       fn (err, output...)->
-#         output = output[0] if output.length is 1
-        
-#         return outCallback new Error 'Duplicated callback call'  if finished[inx]
-
-#         finished[inx] = true
-#         results[inx] = output
-#         errors[inx] = err 
-#         checkJoin()
-
-
-# joinAsyncFns = (fns, outCallback)->
-#   # l = fns.length 
-#   # errors = [0...l].map ()-> undefined
-#   # results = errors.map ()-> undefined
-#   # finished = errors.map ()-> false
-
-#   # debug 'errors', errors
-#   # debug 'results', results
-#   # debug 'finished', finished
-
-#   # checkJoin = ()->
-#   #   return unless finished.every (v)-> v
-#   #   errs = errors.filter (err)-> err 
-#   #   # debug 'errs = ', errs
-#   #   # errors = undefined unless hasErr
-#   #   error = unifyErrors errors
-#   #   # debug 'checkJoin - ', error
-#   #   outCallback(error, results) 
-
-#   join = flyway.join()
-  
-#   for fn in fns
-#     fn join.in()
-#   join.out outCallback
-
-
-#   # for fn, inx in fns  
-#   #   do (inx)->
-#   #     # debug 'call fork', inx , fn.__name
-#   #     fn (err, output...)->
-#   #       output = output[0] if output.length is 1
-        
-#   #       return outCallback new Error 'Duplicated callback call'  if finished[inx]
-
-#   #       finished[inx] = true
-#   #       results[inx] = output
-#   #       errors[inx] = err 
-#   #       checkJoin()
- 
-runFork = (fnFlows, args, outCallback)-> 
-  join = flyway.join()
-  fnFlows.forEach (flow)->
-    flow args..., join.in()
-  join.out outCallback
-
-  # fns = fnFlows.map (flow)->  
-  #    return (next)-> 
-  #     # flow = [flow] unless _isArray flow '
-  #     flow args..., next 
-
-  # joinAsyncFns fns, outCallback
-
-runFlow = (fnFlows, err, args, outCallback)->
-  # debug 'runFlow start', err, args
-  errorHandlerArity = args.length + 2 # include err, callback
-  if err
-    fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
-  
-  return outCallback err, args... if fnFlows.length is 0 
-  
-  [fn, fns...] = fnFlows  
-
-  if _isArray fn 
-    fnArr = fn.map (flow)->  
-      return _flow flow if _isArray flow 
-      return flow
-
-    fn = (args..., next)-> runFork fnArr, args, next 
-
-  argsToCall = args
-  argsToCall = [err].concat args if fn.length is errorHandlerArity
-
-  fn argsToCall..., (err)->
-    runFlow fns, err, args, outCallback  
-    
-runChain = ( fnFlows, args, outCallback)->
-  debug 'runChain', fnFlows, args
-  [fn, fns...] = fnFlows  
-  if _isArray fn
-    fnArr = fn.map (flow)->  
-      return _chain flow if _isArray flow 
-      return flow
-
-    fn = (args..., next)-> runFork fnArr, args, next 
-  fn args..., (err, output...)->
-    return outCallback err if err   
-    return outCallback null, output... if fns.length is 0 
-    runChain fns, output, outCallback 
- 
-
-
-runReduce = (data, fn, memo, outCallback)->
-  # debug 'runReduce', arguments
-  return outCallback null, memo if data.length is 0
-  [head, others...] = data
-  fn memo, head, (err, newMemo)->
-    return outCallback err if err
-    runReduce others, fn, newMemo, outCallback
-
-runSeries = (data, fn, results, outCallback)->
-  # debug 'runSeries', arguments
-  return outCallback null, results if data.length is 0
-  [head, others...] = data
-  fn head, (err, output)->
-    return outCallback err if err
-    results.push output
-    runSeries others, fn, results, outCallback
-
-_series = (fn)->
+_fn.series = (fn)->
   return (data, outCallback)-> 
     runSeries data, fn, [], outCallback
 
-_map = (fn)->
+_fn.map = (fn)->
   return (data, outCallback)->
 #     _map arr, fn, next
 # _map = (data, fn, outCallback)->  
@@ -371,12 +186,12 @@ _map = (fn)->
       #   outCallback err, result
    
       
-_reduce = (memo, fn)->
+_fn.reduce = (memo, fn)->
   return (data, outCallback)->
     runReduce data, fn, memo, outCallback
 
 
-_retry = (tryLimit, fn)->
+_fn.retry = (tryLimit, fn)->
   return (args..., outCallback)->
     # debug 'fnRetry'
     tryCnt = 0
@@ -392,14 +207,14 @@ _retry = (tryLimit, fn)->
  
 
 
-_wrap = (preFns,postFns)->
+_fn.wrap = (preFns,postFns)->
   preFns = [preFns] unless _isArray preFns
   postFns = [postFns] unless _isArray postFns
   return (inFns)->
     inFns = [inFns] unless _isArray inFns
-    return _flow [preFns..., inFns..., postFns...]
+    return _fn.flow [preFns..., inFns..., postFns...]
 
-_fork = (flowFns)->
+_fn.fork = (flowFns)->
   return (args..., outCallback)->      
     if typeof outCallback isnt 'function'
       args.push outCallback
@@ -407,14 +222,14 @@ _fork = (flowFns)->
     runFork flowFns, args, outCallback
 
     
-_chain = (chainFns)->
+_fn.chain = (chainFns)->
   return (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = ()->
     runChain chainFns, args, outCallback
 
-_flow = (flowFns)->
+_fn.flow = (flowFns)->
   return (args..., outCallback)->  
     first = args[0]
     err = null
@@ -427,20 +242,20 @@ _flow = (flowFns)->
       args.push outCallback
       outCallback = ()->
 
-    # debug '_flow arity = ', args.length
-    # debug '_flow err= ', err
+    # debug '_fn.flow arity = ', args.length
+    # debug '_fn.flow err= ', err
     runFlow flowFns, err, args, outCallback
 
 
-_flow.run = (args..., fnFlows)-> 
-  _flow(fnFlows) args..., ()->
+_fn.flow.run = (args..., fnFlows)-> 
+  _fn.flow(fnFlows) args..., ()->
   
-_chain.run = (args..., fnFlows)-> 
-  _chain(fnFlows) args..., ()->
+_fn.chain.run = (args..., fnFlows)-> 
+  _fn.chain(fnFlows) args..., ()->
 
-flyway = _flow
-flyway.fn = {}
-flyway.mkFn = {}
+flyway = _fn.flow
+# flyway.fn = {}
+# flyway.mkFn = {}
 
 
 
@@ -449,34 +264,34 @@ flyway.mkFn = {}
 # flyway.mk = 
   # retry: _retry
   # map : _map
-flyway.flow = _flow
+flyway.flow = _fn.flow
 # flyway.fnForkJoin = fnForkJoin
-flyway.chain = _chain
+flyway.chain = _fn.chain
 # flyway.compose = _compose
 
 
 # 다중화(병렬 실행)에는, 입력을 다중화하거나, 함수를 다중화 할수 있다.
-flyway.map = _map
-flyway.fork = _fork
+flyway.map = _fn.map
+flyway.fork = _fn.fork
 
-flyway.each = _map
+flyway.each = _fn.map
 
 # 다중화된 결과를 합치는 건 리듀스 뿐...
-flyway.reduce = _reduce
+flyway.reduce = _fn.reduce
 
 # 다중 입력에 대한 직렬 수행.
-flyway.series = _series
+flyway.series = _fn.series
 # 다수 함수에 대한 직렬 수행은 flow나  chain에서 가능하다.
 #
 
 # 함수를 수정할수 있다. 
 # 반복
-flyway.retry = _retry
+flyway.retry = _fn.retry
 # 앞뒤로 감싸기.
-flyway.wrap = _wrap
+flyway.wrap = _fn.wrap
 
 
 # flyway.callback = callback
-flyway.join = _join
+flyway.join = _fn.join
 
 module.exports = exports = flyway

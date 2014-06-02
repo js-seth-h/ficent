@@ -496,10 +496,10 @@ describe 'wrap', ()->
       ctx.num *= 11
       next()
 
-    flyway.mkFn.wrap = flyway.wrap [init], [end]
+    wrapper = flyway.wrap [init], [end]
     
     
-    flyway.mkFn.wrap([inFn]) {}, ()->
+    wrapper([inFn]) {}, ()->
       done()
   it 'wrap test - no callback, no array', (done)->    
 
@@ -513,10 +513,10 @@ describe 'wrap', ()->
       ctx.num *= 11
       next()
 
-    flyway.mkFn.wrap = flyway.wrap init, end
+    wrapper = flyway.wrap init, end
     
     
-    flyway.mkFn.wrap(inFn) {}
+    wrapper(inFn) {}
 
 # describe 'callback', ()->
 #   it 'should take callback', (done)->
