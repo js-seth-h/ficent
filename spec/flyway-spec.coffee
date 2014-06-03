@@ -206,8 +206,8 @@ describe 'map', ()->
       # console.log 'fn', n
       next null, n * n
     flyway.map(fn) data, (errs, results)->
-      console.log 'err ' , errs
-      console.log 'results ' , results
+      # console.log 'err ' , errs
+      # console.log 'results ' , results
       assert.equal results[0], 4
       done()
 
@@ -459,7 +459,7 @@ describe 'run now', ()->
   it 'flow.run with no arg', (done)->    
     flyway.run  [
       (next)-> 
-        console.log 'arguments= ' ,arguments
+        # console.log 'arguments= ' ,arguments
         next()
       (next)-> 
         done()
@@ -614,3 +614,34 @@ describe 'wrap', ()->
 
 
 #     join.out (err, values...)->
+
+
+describe 'delay', ()->    
+  it 'delayed ', (done)-> 
+
+    str = "A"
+    fn = ()->
+      str += "C"
+    dfn = flyway.delay 100, fn
+
+    dfn()
+    str += 'B'
+
+    setTimeout ()->
+      expect(str).toEqual "ABC"
+      done()
+
+    , 100
+
+  it 'run directly', (done)-> 
+    str = "A"
+    fn = (inStr = 'C')->
+      str += inStr
+    flyway.do flyway.delay 150, fn
+    flyway.do 'D', flyway.delay  50, fn
+
+    setTimeout ()->
+      expect(str).toEqual "ADC"
+      done()
+
+    , 200

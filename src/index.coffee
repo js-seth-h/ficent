@@ -18,7 +18,7 @@ _isArray = Array.isArray or (obj) ->
 _isError = (obj)-> 
   _toString.call(obj) is "[object Error]"
  
-
+_emptyFn = ()->
 
 cutFlowsByArity = (fnFlows, arity)->
   # debug 'cutFlowsByArity  ', arity     
@@ -204,8 +204,15 @@ _fn.retry = (tryLimit, fn)->
         outCallback err, output...
     argsToCall = args.concat fnDone 
     fn argsToCall...
- 
-
+_fn.do = (args..., fn)->
+  fn args...
+_fn.delay = (msec, fn)->
+  return (args...)->
+    setTimeout ()->
+      fn args...
+    , msec
+# _fn.delay.run = (args..., msec, fn)->
+#   _fn.delay(msec, fn) args...
 
 _fn.wrap = (preFns,postFns)->
   preFns = [preFns] unless _isArray preFns
@@ -248,10 +255,11 @@ _fn.flow = (flowFns)->
 
 
 _fn.flow.run = (args..., fnFlows)-> 
-  _fn.flow(fnFlows) args..., ()->
-  
+  # _fn.flow(fnFlows) args..., _emptyFn
+  _fn.do args..., _emptyFn, _fn.flow fnFlows
 _fn.chain.run = (args..., fnFlows)-> 
-  _fn.chain(fnFlows) args..., ()->
+  # _fn.chain(fnFlows) args..., _emptyFn
+  _fn.do args..., _emptyFn, _fn.chain fnFlows
 
 flyway = _fn.flow
 # flyway.fn = {}
@@ -293,5 +301,10 @@ flyway.wrap = _fn.wrap
 
 # flyway.callback = callback
 flyway.join = _fn.join
+
+
+flyway.delay = _fn.delay
+
+flyway.do = _fn.do
 
 module.exports = exports = flyway
