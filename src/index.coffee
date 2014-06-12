@@ -1,5 +1,5 @@
 # util = require 'util'
-debug =  require('debug')('flyway')
+debug =  require('debug')('ficent')
 
 # Error Jump 기능
 # 직/병렬 동시 서술
@@ -37,7 +37,7 @@ unifyErrors = (errors)->
   return error  
  
 runFork = (fnFlows, args, outCallback)-> 
-  join = flyway.join()
+  join = ficent.join()
   fnFlows.forEach (flow)->
     flow args..., join.in()
   join.out outCallback 
@@ -147,7 +147,7 @@ _fn.map = (fn)->
   return (data, outCallback)->
 #     _map arr, fn, next
 # _map = (data, fn, outCallback)->  
-    join = flyway.join()
+    join = ficent.join()
     if _isArray data 
       data.forEach (args)->
         args = [args] unless _isArray args
@@ -261,50 +261,50 @@ _fn.chain.run = (args..., fnFlows)->
   # _fn.chain(fnFlows) args..., _emptyFn
   _fn.do args..., _emptyFn, _fn.chain fnFlows
 
-flyway = _fn.flow
-# flyway.fn = {}
-# flyway.mkFn = {}
+ficent = _fn.flow
+# ficent.fn = {}
+# ficent.mkFn = {}
 
 
 
 # 함수 2개를 붙이는 방법으로 Conext(Flow)와  값전달(Chain)이 있다.
  
-# flyway.mk = 
+# ficent.mk = 
   # retry: _retry
   # map : _map
-flyway.flow = _fn.flow
-# flyway.fnForkJoin = fnForkJoin
-flyway.chain = _fn.chain
-# flyway.compose = _compose
+ficent.flow = _fn.flow
+# ficent.fnForkJoin = fnForkJoin
+ficent.chain = _fn.chain
+# ficent.compose = _compose
 
 
 # 다중화(병렬 실행)에는, 입력을 다중화하거나, 함수를 다중화 할수 있다.
-flyway.map = _fn.map
-flyway.fork = _fn.fork
+ficent.map = _fn.map
+ficent.fork = _fn.fork
 
-flyway.each = _fn.map
+ficent.each = _fn.map
 
 # 다중화된 결과를 합치는 건 리듀스 뿐...
-flyway.reduce = _fn.reduce
+ficent.reduce = _fn.reduce
 
 # 다중 입력에 대한 직렬 수행.
-flyway.series = _fn.series
+ficent.series = _fn.series
 # 다수 함수에 대한 직렬 수행은 flow나  chain에서 가능하다.
 #
 
 # 함수를 수정할수 있다. 
 # 반복
-flyway.retry = _fn.retry
+ficent.retry = _fn.retry
 # 앞뒤로 감싸기.
-flyway.wrap = _fn.wrap
+ficent.wrap = _fn.wrap
 
 
-# flyway.callback = callback
-flyway.join = _fn.join
+# ficent.callback = callback
+ficent.join = _fn.join
 
 
-flyway.delay = _fn.delay
+ficent.delay = _fn.delay
 
-flyway.do = _fn.do
+ficent.do = _fn.do
 
-module.exports = exports = flyway
+module.exports = exports = ficent
