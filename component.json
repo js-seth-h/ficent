@@ -1,8 +1,8 @@
 {
-  "name": "flyway",
-  "repo": "js-seth-h/flyway",
+  "name": "ficent",
+  "repo": "js-seth-h/ficent",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "keywords": [
     "flow control",
     "async",
