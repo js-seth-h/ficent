@@ -21,9 +21,9 @@ _isError = (obj)->
 _emptyFn = ()->
 
 cutFlowsByArity = (fnFlows, arity)->
-  # debug 'cutFlowsByArity  ', arity     
+  debug 'cutFlowsByArity  ', arity     
   for fn, inx in fnFlows
-    # debug 'fn.length', fn.length
+    debug 'fn.length', fn.length
     if not _isArray(fn) and fn.length is arity
       return fnFlows[inx..] 
   return []
@@ -43,7 +43,7 @@ runFork = (fnFlows, args, outCallback)->
   join.out outCallback 
 
 runFlow = (fnFlows, err, args, outCallback)->
-  # debug 'runFlow start', err, args
+  debug 'runFlow start', err, args
   errorHandlerArity = args.length + 2 # include err, callback
   if err
     fnFlows = cutFlowsByArity(fnFlows, errorHandlerArity)    
@@ -63,6 +63,7 @@ runFlow = (fnFlows, err, args, outCallback)->
   argsToCall = [err].concat args if fn.length is errorHandlerArity
 
   fn argsToCall..., (err)->
+    debug 'callback of runFlow, err = ', err
     runFlow fns, err, args, outCallback  
     
 runChain = ( fnFlows, args, outCallback)->
@@ -82,7 +83,7 @@ runChain = ( fnFlows, args, outCallback)->
 
 
 runReduce = (data, fn, memo, outCallback)->
-  # debug 'runReduce', arguments
+  debug 'runReduce', arguments
   return outCallback null, memo if data.length is 0
   [head, others...] = data
   fn memo, head, (err, newMemo)->
@@ -90,7 +91,7 @@ runReduce = (data, fn, memo, outCallback)->
     runReduce others, fn, newMemo, outCallback
 
 runSeries = (data, fn, results, outCallback)->
-  # debug 'runSeries', arguments
+  debug 'runSeries', arguments
   return outCallback null, results if data.length is 0
   [head, others...] = data
   fn head, (err, output)->
@@ -164,7 +165,7 @@ _fn.map = (fn)->
 
       _outCallback = outCallback
       outCallback= (err, results, next)->
-        # debug 'remapper out = ', results
+        debug 'remapper out = ', results
         next err if err
         # out = {}
         # for own key, value of data
@@ -193,10 +194,10 @@ _fn.reduce = (memo, fn)->
 
 _fn.retry = (tryLimit, fn)->
   return (args..., outCallback)->
-    # debug 'fnRetry'
+    debug 'fnRetry'
     tryCnt = 0
     fnDone = (err, output...)->
-      # debug 'fnDone of fnRetry'
+      debug 'fnDone of fnRetry'
       tryCnt++
       if err and tryCnt < tryLimit
         fn argsToCall...
@@ -205,6 +206,7 @@ _fn.retry = (tryLimit, fn)->
     argsToCall = args.concat fnDone 
     fn argsToCall...
 _fn.do = (args..., fn)->
+  debug 'do  with ', 'args=', args, 'fn=', fn
   fn args...
 _fn.delay = (msec, fn)->
   return (args...)->
@@ -238,19 +240,22 @@ _fn.chain = (chainFns)->
 
 _fn.flow = (flowFns)->
   return (args..., outCallback)->  
+
     first = args[0]
     err = null
     # debug 'first', first
     if first is null or first is undefined or _isError first
       err = args.shift()
-      # debug 'set err = ', err
+      debug 'set err = ', err
   
-    if typeof outCallback isnt 'function'
+    if outCallback and typeof outCallback isnt 'function'
       args.push outCallback
-      outCallback = ()->
+      outCallback = undefined
+    unless outCallback
+      outCallback = _emptyFn
 
     # debug '_fn.flow arity = ', args.length
-    # debug '_fn.flow err= ', err
+    debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
     runFlow flowFns, err, args, outCallback
 
 

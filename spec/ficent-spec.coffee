@@ -26,7 +26,28 @@ describe 'flow', ()->
       assert ctx.b , "must exist"
 
       done()
+  it 'with no arguments ', (done)-> 
 
+    result = 1
+
+    f1 = (next)-> 
+      debug 'f1'
+      result = 9
+      next()
+    f2 = (next)-> 
+      debug 'f2'
+      result = 11
+      next()
+    f = ficent [ f1, f2]
+    # f (req,res,next)
+    debug 'run no arg'
+    f (err )->
+      assert not util.isError err, 'no error'
+      # assert ctx.a , "must exist"
+      # assert ctx.b , "must exist"
+      expect(result).toEqual 11
+
+      done()  
   it 'run with multiple context arguments ', (done)-> 
 
     ctx = {}
@@ -645,3 +666,38 @@ describe 'delay', ()->
       done()
 
     , 200
+
+describe '.do', ()->
+  it '.do .flow : with no arguments', (done)->
+    # debug '.do.flow - no arg'
+    result = 1 
+    ficent.do ficent.flow [
+      (next)-> 
+        debug 'f1'
+        result = 9
+        next()
+      (next)-> 
+        debug 'f2'
+        result = 11
+        next()
+    ]
+
+    expect(result).toEqual 11
+    done()
+  it '.do .flow : with no arguments, outcallback', (done)->
+    # debug '.do.flow - no arg'
+    result = 1 
+    fx = ficent.flow [
+      (next)-> 
+        debug 'f1'
+        result = 9
+        next()
+      (next)-> 
+        debug 'f2'
+        result = 11
+        next()
+    ]
+    ficent.do ()->
+      expect(result).toEqual 11
+      done()      
+    ,fx
