@@ -233,9 +233,11 @@ _fn.fork = (flowFns)->
     
 _fn.chain = (chainFns)->
   return (args..., outCallback)-> 
-    if typeof outCallback isnt 'function'
+    if outCallback and typeof outCallback isnt 'function'
       args.push outCallback
-      outCallback = ()->
+      outCallback = undefined
+    unless outCallback
+      outCallback = _emptyFn
     runChain chainFns, args, outCallback
 
 _fn.flow = (flowFns)->

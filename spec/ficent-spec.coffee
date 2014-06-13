@@ -701,3 +701,20 @@ describe '.do', ()->
       expect(result).toEqual 11
       done()      
     ,fx
+
+  it '.do .chain : with no arguments', (done)->
+    # debug '.do.flow - no arg'
+    result = 1 
+    ficent.do ficent.flow [
+      (next)-> 
+        debug 'f1'
+        result = 9
+        next(null, result)
+      (a, next)-> 
+        debug 'f2'
+        result = 11
+        next(null, result)
+    ]
+
+    expect(result).toEqual 11
+    done()
