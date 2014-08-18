@@ -39,7 +39,12 @@ unifyErrors = (errors)->
 runFork = (fnFlows, args, outCallback)-> 
   join = ficent.join()
   fnFlows.forEach (flow)->
-    flow args..., join.in()
+    cbIn = join.in()
+    try 
+      flow args..., cbIn
+    catch error 
+      cbIn error 
+
   join.out outCallback 
 
 runFlow = (fnFlows, err, args, outCallback)->
@@ -61,10 +66,12 @@ runFlow = (fnFlows, err, args, outCallback)->
 
   argsToCall = args
   argsToCall = [err].concat args if fn.length is errorHandlerArity
-
-  fn argsToCall..., (err)->
-    debug 'callback of runFlow, err = ', err
-    runFlow fns, err, args, outCallback  
+  try
+    fn argsToCall..., (err)->
+      debug 'callback of runFlow, err = ', err
+      runFlow fns, err, args, outCallback  
+  catch error
+    runFlow fns, error, args, outCallback
     
 runChain = ( fnFlows, args, outCallback)->
   debug 'runChain', fnFlows, args
@@ -75,29 +82,39 @@ runChain = ( fnFlows, args, outCallback)->
       return flow
 
     fn = (args..., next)-> runFork fnArr, args, next 
-  fn args..., (err, output...)->
-    return outCallback err if err   
-    return outCallback null, output... if fns.length is 0 
-    runChain fns, output, outCallback 
- 
+  try
+    fn args..., (err, output...)->
+      return outCallback err if err   
+      return outCallback null, output... if fns.length is 0 
+      runChain fns, output, outCallback 
+  catch error
+    return outCallback error
 
 
 runReduce = (data, fn, memo, outCallback)->
   debug 'runReduce', arguments
   return outCallback null, memo if data.length is 0
   [head, others...] = data
-  fn memo, head, (err, newMemo)->
-    return outCallback err if err
-    runReduce others, fn, newMemo, outCallback
+  try
+    fn memo, head, (err, newMemo)->
+      return outCallback err if err
+      runReduce others, fn, newMemo, outCallback
+  catch error 
+    outCallback error 
+
 
 runSeries = (data, fn, results, outCallback)->
   debug 'runSeries', arguments
   return outCallback null, results if data.length is 0
   [head, others...] = data
-  fn head, (err, output)->
-    return outCallback err if err
-    results.push output
-    runSeries others, fn, results, outCallback
+  try
+    fn head, (err, output)->
+      return outCallback err if err
+      results.push output
+      runSeries others, fn, results, outCallback
+  catch error 
+    outCallback error 
+    
 
 _fn = {}
 _fn.join = (strict = true)->
@@ -203,8 +220,12 @@ _fn.retry = (tryLimit, fn)->
         fn argsToCall...
       else
         outCallback err, output...
-    argsToCall = args.concat fnDone 
-    fn argsToCall...
+    try 
+      argsToCall = args.concat fnDone     
+      fn argsToCall...
+    catch error
+      fnDone error
+
 _fn.do = (args..., fn)->
   debug 'do  with ', 'args=', args, 'fn=', fn
   fn args...
