@@ -1,3 +1,4 @@
+process.env.DEBUG = "*"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -11,21 +12,51 @@ func2 = (ctx, next)->
   ctx.b = true
   next()
 
+
 describe 'flow', ()->    
-  it 'run with context arguments ', (done)-> 
+
+  it 'run flow with context arguments ', (done)-> 
 
     ctx = 
       name : 'context base'
     
-    f = ficent [ func1, func2]
-    # f (req,res,next)
-    f ctx, (err, ctx )->
-      debug  'arguments', arguments
-      assert not util.isError err, 'no error'
-      assert ctx.a , "must exist"
-      assert ctx.b , "must exist"
 
+    ficent.do ctx, [
+      func1, 
+      func2, 
+      (err, ctx, next)->
+        debug  'arguments', arguments
+        expect err
+          .toEqual null
+        # assert not util.isError err, 'no error'
+        expect ctx.a 
+          .toBeTruthy()
+        expect ctx.b
+          .toBeTruthy()
+        done()
+    ]
+  
+  it 'run function created by flow.fn', (done)-> 
+
+    ctx = 
+      name : 'context base'
+    
+
+    _fn = ficent.fn [
+      func1, 
+      func2
+    ]
+    _fn ctx, (err, ctx)->
+      debug  'arguments', arguments
+      expect err
+        .toEqual null
+      # assert not util.isError err, 'no error'
+      expect ctx.a 
+        .toBeTruthy()
+      expect ctx.b
+        .toBeTruthy()
       done()
+
   it 'with no arguments ', (done)-> 
 
     result = 1
@@ -38,7 +69,7 @@ describe 'flow', ()->
       debug 'f2'
       result = 11
       next()
-    f = ficent [ f1, f2]
+    f = ficent.fn [ f1, f2]
     # f (req,res,next)
     debug 'run no arg'
     f (err )->
@@ -54,7 +85,7 @@ describe 'flow', ()->
     ctx1 = {}
     ctx2 = {}
     
-    f = ficent [ 
+    f = ficent.fn [ 
       (ctx, c1,c2, next)-> 
         ctx.a = true
         next()
@@ -75,9 +106,9 @@ describe 'flow', ()->
 
     ctx = {}
     
-    g = ficent [func1, func2]
+    g = ficent.fn [func1, func2]
 
-    f = ficent [ g ]
+    f = ficent.fn [ g ]
 
     # f (req,res,next)
     f ctx, (err, ctx )->
@@ -100,7 +131,7 @@ describe 'flow', ()->
       assert err, 'must get Error'
       next()
 
-    f = ficent [ func1, func_mk_Err, func2, func_Err]
+    f = ficent.fn [ func1, func_mk_Err, func2, func_Err]
       
     # f (req,res,next)
     f ctx, (err, ctx)->
@@ -117,7 +148,7 @@ describe 'flow', ()->
       debug 'mk Err'
       next new Error 'FAKE' 
 
-    f = ficent [ func1, func_mk_Err, func2]
+    f = ficent.fn [ func1, func_mk_Err, func2]
       
     # f (req,res,next)
     f ctx, (err, ctx)->
@@ -140,9 +171,9 @@ describe 'retry', ()->
       ctx.tryCnt++
       debug 'mk Err', ctx.tryCnt
       next new Error 'FAKE'
-    f = ficent [ func_mk_Err ]
+    f = ficent.fn [ func_mk_Err ]
 
-    g = ficent [
+    g = ficent.fn [
       ficent.retry 3, f
     ]
     # f (req,res,next)
@@ -165,7 +196,7 @@ describe 'retry', ()->
       if ctx.tryCnt is 2
         return next()
       next new Error 'FAKE'
-    f = ficent [ func_mk_Err ]
+    f = ficent.fn [ func_mk_Err ]
 
     g = ficent.retry 5, f
     
@@ -209,7 +240,7 @@ describe 'retry', ()->
         return next null, ctx
       next new Error 'FAKE just fn' 
 
-    g = ficent [
+    g = ficent.fn [
       ficent.retry 5, func_mk_Err
     ]
     # f (req,res,next)
@@ -218,99 +249,85 @@ describe 'retry', ()->
       assert not util.isError err, 'no error'
       assert ctx.tryCnt is 2 , 'try 2 and success' 
       done() 
-
-
-describe 'map', ()->   
-  it 'map', (done)->    
-    data = [2..5]
-    fn = (n, next)-> 
-      # console.log 'fn', n
-      next null, n * n
-    ficent.map(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
-      assert.equal results[0], 4
+ 
+describe 'fork', ()->    
+  it 'basic', (done)->
+    forkingFns = []
+    ctx = 
+      cnt : 0
+    for i  in [0...5]
+      forkingFns.push (next)->  
+        ctx.cnt++
+        next()
+    f = ficent.fork forkingFns
+    f (err)->
+      assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
-
-  it 'map obj', (done)->    
-    data = 
-      9 : 6
-      2 : 8
-    fn = (k, v, next)-> 
-      # console.log 'fn', k, v
-      next null, k * v
-    ficent.map(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
-      assert.equal results[2], 16
+  it 'with Err', (done)->
+    forkingFns = []
+    ctx = 
+      cnt : 0
+    for i  in [0...5]
+      forkingFns.push (next)->  
+        ctx.cnt++
+        next new Error 'JUST'
+    f = ficent.fork forkingFns
+    f (err)->
+      assert util.isError err, 'error'
+      assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
-  it 'with CTX / no err check ', (done)-> 
-
-    ctx = {
-      name: 'this is multiplex context'
-      } 
-    g = ficent [
-      (ctx, next)-> 
-        ctx.num = ctx.num * ctx.num 
+  it 'with arguments', (done)->
+    forkingFns = []
+    ctx = 
+      cnt : 0
+    for i  in [0...5]
+      forkingFns.push (num, next)->  
+        ctx.cnt += num
         next()
-      (ctx, next)-> 
-        ctx.num = ctx.num * 10
-        next()
-    ]
-    inputs = []
-    for x in [0..3]
-      inputs[x] = 
-        num : x 
-    debug 'inputs',inputs
-    # ficent.map inputs, g, (errs, results )->
-    ficent.map(g) inputs, (errs, results )->  
-      debug 'results', errs, results     
-      assert not util.isError errs, 'no error'
-      assert.equal results[1].num, 10, 
-      done() 
-  it 'with CTX / SIDM err  ', (done)-> 
-
-    ctx = {
-      name: 'this is multiplex context'
-      } 
-    g = ficent [
-      (ctx, next)-> 
-        ctx.num = ctx.num * ctx.num 
-        if ctx.num is 1
-          return next new Error "FAKE 1"
-        next()
-      (ctx, next)-> 
-        debug 'f2 ', ctx, next
-        ctx.num = ctx.num * 10
-        if ctx.num is 0
-          return next new Error "FAKE 2"
-        next()
-    ]
-    inputs = []
-    for x in [0..3]
-      inputs[x] = 
-        num : x 
-    ficent.map(g) inputs,  (errs, results )->      
-      debug 'results err', errs, results 
-      assert util.isError errs, 'error'
-      assert results[2].num is 40, 'not correct '
+    f = ficent.fork forkingFns
+    f 5, (err)->
+      assert ctx.cnt is 25 , 'fork count 25 ' 
       done()
  
 
+  it 'with arguments, no callback', (done)->
+    forkingFns = []
+    ctx = 
+      cnt : 0
+    for i  in [0...5]
+      forkingFns.push (num, next)->  
+        ctx.cnt += num
+        next()
+    f = ficent.fork forkingFns
+    f 5
+    assert ctx.cnt is 25 , 'fork count 25 ' 
+    done()
+ 
+  it 'do with arguments', (done)->
+    forkingFns = []
+    ctx = 
+      cnt : 0
+    for i  in [0...5]
+      forkingFns.push (num, next)->  
+        ctx.cnt += num
+        next()
+    f = ficent.fork.do 5, forkingFns, (err)->
+      assert ctx.cnt is 25 , 'fork count 25 ' 
+      done()
+   
+
+
 describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
-
     ctx = {}
-    
-    f = ficent [ [func1, func2, (ctx,next)-> 
+    f = ficent.fn [ [func1, func2, (ctx,next)-> 
       ctx.zzz = 9
       debug 'fj', ctx
       next()
      ] ]  
       
-    # f (req,res,next)
     f ctx, (err, ctx)->
       debug 'errs, ctx', err, ctx     
       assert not util.isError err, 'no error'
@@ -322,7 +339,7 @@ describe 'flow  - forkjoin', ()->
 
     ctx = {}
     
-    f = ficent [ [func1, func2, (ctx, next)->
+    f = ficent.fn [ [func1, func2, (ctx, next)->
         next new Error 'fire Err'
       ] ]  
       
@@ -337,134 +354,13 @@ describe 'flow  - forkjoin', ()->
 
       done()
   
-  
 
-describe 'chain', ()->     
-  it 'basic', (done)-> 
-    f1 = (a, b, next)-> 
-      # console.log 'f1', a, b, next
-      # return next new Error 'E'
-      next null, a * b, a, b
-    f2 = (a, b, c, next)-> 
-      # console.log 'f2', a, b, c, next
-      next null, a + b + c, a, b, c
-    fn = ficent.chain [f1, f2]
-
-    fn 2,3, (err, output, a, b, c)->
-
-      # console.log 'err ', err
-      # console.log   output, a, b, c
-      assert.equal err, null
-      assert.equal output, 11
-      assert.equal a, 6
-      assert.equal b, 2
-      assert.equal c, 3
-      done()
-  it 'fork in chain', (done)-> 
-    f1 = (a, b, next)-> 
-      # console.log 'f1', a, b, next
-      # return next new Error 'E'
-      next null, a * b, a, b
-    f2 = (a, b, c, next)-> 
-      # console.log 'f2', a, b, c, next
-      next null, a + b + c, a, b, c
-    f3 = (a, b, c, d, next)-> next null, a + b +  c + d
-    f4 = (a, b, c, d, next)-> next null, a - b, c - d
-    f5 = (output, next)-> next null, output[0] * output[1][1] + output[1][0] 
-    # f5 = (arr, next)-> ficent.map arr, fn, next
-    fn = ficent.chain [f1, f2, [f3, f4], f5]
-
-    fn 2,3, (err, output)->
-      debug 'chain out', arguments
-      # console.log 'err ', err
-      # console.log   output, a, b, c
-      assert.equal err, null
-      assert.equal output, -17
-      # assert.equal output[0], 22
-      # assert.equal output[1][0], 5
-      done()
-
-  it 'fork', (done)-> 
-
-    f3 = (a, b, c, d, next)-> next null, a + b +  c + d
-    f4 = (a, b, c, d, next)-> next null, a - b, c - d
-     # f5 = (arr, next)-> ficent.map arr, fn, next
-    fn = ficent.fork [f3, f4]
-
-    fn 2,3, 4, 5, (err, output)->
-      debug 'chain out', arguments
-      # console.log 'err ', err
-      # console.log   output
-      assert.equal err, null
-      assert.equal output[0], 14
-      assert.equal output[1][0], -1 
-      assert.equal output[1][1], -1 
-      # assert.equal output[0], 22
-      # assert.equal output[1][0], 5
-      done() 
-
-  it 'map chain', (done)-> 
-    f1 = (a, b, next)-> 
-      # console.log 'f1', a, b, next
-      # return next new Error 'E'
-      next null, [a..b] 
-    fn = (num, next)-> next null, num * num
-    # f5 = (arr, next)-> ficent.map arr, fn, next
-    fn = ficent.chain [f1, ficent.map ficent.chain [ fn, fn] ]
-
-    fn 2,3, (err, output)->
-      debug 'chain out', arguments
-      # console.log 'err ', err
-      # console.log   output, a, b, c
-      assert.equal err, null
-      assert.equal output[0], 16
-      assert.equal output[1], 81
-      # assert.equal output[0], 22
-      # assert.equal output[1][0], 5
-      done()
-  it 'map reduce ', (done)-> 
-    f1 = (a, b, next)-> 
-      # console.log 'f1', a, b, next
-      # return next new Error 'E'
-      next null, [a..b] 
-    fn = (num, next)-> next null, num * num
-    fnR = (output, next)->
-      v = output.reduce (acc , e)-> 
-        acc + e
-      next null, v 
-
-    fnR = ficent.reduce 0, (acc , e, next)-> next null, acc + e
-    # f5 = (arr, next)-> ficent.map arr, fn, next
-    fn = ficent.chain [f1, (ficent.map ficent.chain [ fn, fn]), fnR ]
-
-    fn 2,3, (err, output)->
-      debug 'chain out', arguments
-      # console.log 'err ', err
-      # console.log   output, a, b, c
-      assert.equal err, null
-      assert.equal output, 97
-      # assert.equal output[0], 22
-      # assert.equal output[1][0], 5
-      done()
- 
-
-describe 'series', ()->   
-  it 'series', (done)->    
-    data = [2..5]
-    fn = (n, next)-> 
-      # console.log 'fn', n
-      next null, n * n
-    ficent.series(fn) data, (errs, results)->
-      # console.log 'err ' , errs
-      # console.log 'results ' , results
-      assert.equal results[0], 4
-      done()
-
+   
 
 
 describe 'run now', ()->   
-  it 'flow.run', (done)->    
-    ficent.run {num:5}, [
+  it 'flow.do', (done)->    
+    ficent.do {num:5}, [
       (ctx, next)-> 
         ctx.num += 10
         next()
@@ -478,7 +374,7 @@ describe 'run now', ()->
 
 
   it 'flow.run with no arg', (done)->    
-    ficent.run  [
+    ficent.do  [
       (next)-> 
         # console.log 'arguments= ' ,arguments
         next()
@@ -486,19 +382,6 @@ describe 'run now', ()->
         done()
     ]  
 
-
-  it 'chain.run', (done)->    
-    ficent.chain.run 5, [
-      (num, next)-> 
-        num += 10
-        next(null, num)
-      (num, next)-> 
-        num -= 100
-        next(null, num)
-      (num, next)-> 
-        assert.equal num, -85
-        done()
-    ]  
 
 
 
@@ -538,105 +421,7 @@ describe 'wrap', ()->
     
     
     wrapper(inFn) {}
-
-# describe 'callback', ()->
-#   it 'should take callback', (done)->
-
-#     fire = (next)->
-#       setTimeout next, 50
-
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then ()->
-#       done()
-#   it 'should take passed callback', (done)->
-
-#     fire = (next)-> next()
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then ()->
-#       done()
-#   it 'should pass output when passed callback', (done)->
-
-#     fire = (next)-> next null, 1,2,3,4,5
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then (err, args...)->
-
-#       expect(args).toEqual [1,2,3,4,5]
-#       done()
-
-#   it 'should take callback and output', (done)->
-
-#     fire = (next)->
-#       c = ()->  next null, 1,2,3,4,5
-#       setTimeout c, 50
-#       # c()
-      
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then (err, args...)->
-
-#       expect(args).toEqual [1,2,3,4,5]
-#       done()
-
-
-#   it 'should wait all', (done)->
-
-#     fire1 = (next)->
-#       c = ()->  next null, 1,2,3,4
-#       setTimeout c, 50
-#       # c()
-      
-#     fire2 = (next)->
-#       c = ()->  next null, 9,10,11
-#       setTimeout c, 50
-#       # c()
-      
-#     C1 = ficent.callback()
-#     fire1 C1
-#     C2 = ficent.callback()
-#     fire2 C2
-#     ficent.callback.waitAll(C1,C2).then (err, args)->
-#       expect(args).toEqual [[1,2,3,4], [9,10,11]]
-#       done()
-
-#   it 'should work with done', (done)->
-
-#     fire = (next)-> next.done()
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then ()->
-#       done()
-
-#   it 'should pass error', (done)->
-
-#     fire = (next)-> 
-#       c = ()->  next new Error 'FAKE'
-#       setTimeout c, 50
-#       # c()
-
-#     C1 = ficent.callback()
-#     fire C1
-#     C1.then (err)->
-#       expect(err.name).toBe 'Error'
-#       done()
-
-
-
-# describe 'join', ()->
-
-#   it 'should work', (done)->
-
-#     join = ficent.join()
-
-#     join.in()
-#     join.in()
-
-
-#     join.out (err, values...)->
-
-
+ 
 describe 'delay', ()->    
   it 'delayed ', (done)-> 
 
@@ -653,68 +438,4 @@ describe 'delay', ()->
       done()
 
     , 100
-
-  it 'run directly', (done)-> 
-    str = "A"
-    fn = (inStr = 'C')->
-      str += inStr
-    ficent.do ficent.delay 150, fn
-    ficent.do 'D', ficent.delay  50, fn
-
-    setTimeout ()->
-      expect(str).toEqual "ADC"
-      done()
-
-    , 200
-
-describe '.do', ()->
-  it '.do .flow : with no arguments', (done)->
-    # debug '.do.flow - no arg'
-    result = 1 
-    ficent.do ficent.flow [
-      (next)-> 
-        debug 'f1'
-        result = 9
-        next()
-      (next)-> 
-        debug 'f2'
-        result = 11
-        next()
-    ]
-
-    expect(result).toEqual 11
-    done()
-  it '.do .flow : with no arguments, outcallback', (done)->
-    # debug '.do.flow - no arg'
-    result = 1 
-    fx = ficent.flow [
-      (next)-> 
-        debug 'f1'
-        result = 9
-        next()
-      (next)-> 
-        debug 'f2'
-        result = 11
-        next()
-    ]
-    ficent.do ()->
-      expect(result).toEqual 11
-      done()      
-    ,fx
-
-  it '.do .chain : with no arguments', (done)->
-    # debug '.do.flow - no arg'
-    result = 1 
-    ficent.do ficent.flow [
-      (next)-> 
-        debug 'f1'
-        result = 9
-        next(null, result)
-      (a, next)-> 
-        debug 'f2'
-        result = 11
-        next(null, result)
-    ]
-
-    expect(result).toEqual 11
-    done()
+ 
