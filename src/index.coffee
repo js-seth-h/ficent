@@ -40,13 +40,13 @@ _isObject = (obj)->
 
 _emptyFn = ()->
 
-cutFlowsByArity = (flowFns, arity)->
-  debug 'cutFlowsByArity  ', arity     
-  for fn, inx in flowFns
-    debug 'fn.length', fn.length
-    if not _isArray(fn) and fn.length is arity
-      return flowFns[inx..] 
-  return []
+# cutFlowsByArity = (flowFns, arity)->
+#   debug 'cutFlowsByArity  ', arity     
+#   for fn, inx in flowFns
+#     debug 'fn.length', fn.length
+#     if not _isArray(fn) and fn.length is arity
+#       return flowFns[inx..] 
+#   return []
 
 unifyErrors = (errors)->
   errs = errors.filter (err)-> err 
@@ -69,13 +69,21 @@ runFork = (forkingFns, args, outCallback)->
 
 runFlow = (flowFns, err, args, outCallback)->
   debug 'runFlow start', err, args
+  return outCallback err, args... if flowFns.length is 0   
+
   errorHandlerArity = args.length + 2 # include err, callback
-  if err
-    flowFns = cutFlowsByArity(flowFns, errorHandlerArity)    
-  
-  return outCallback err, args... if flowFns.length is 0 
-  
   [fn, fns...] = flowFns  
+  
+
+  _goNext = (err)->
+      debug 'runFlow _goNext : err = ', err
+      runFlow fns, err, args, outCallback  
+
+  if err
+    return _goNext err if _isArray fn
+    return _goNext err if fn.length isnt errorHandlerArity  
+
+    # flowFns = cutFlowsByArity(flowFns, errorHandlerArity)    
 
   if _isArray fn 
     fnArr = fn.map (flow)->  
@@ -87,14 +95,23 @@ runFlow = (flowFns, err, args, outCallback)->
   argsToCall = args
   argsToCall = [err].concat args if fn.length is errorHandlerArity
   try
-    fn argsToCall..., (err)->
-      debug 'callback of runFlow, err = ', err
-      runFlow fns, err, args, outCallback  
+    fn argsToCall..., _goNext
   catch error
-    runFlow fns, error, args, outCallback
+    _goNext error
      
 
 _fn = {}
+
+_validating = (fns)->
+  _valid = (arr)->
+    for item in arr
+      if _isArray item
+        _valid item
+      else
+        throw new Error 'item of ficent flow must be function or array' unless _isFunction item
+
+  _valid fns
+ 
 _fn.join = (strict = true)->
   errors = []
   results = []
@@ -135,40 +152,6 @@ _fn.join = (strict = true)->
   return fns
   
 
-_fn.retry = (tryLimit, fn)->
-  return (args..., outCallback)->
-    debug 'fnRetry'
-    tryCnt = 0
-    fnDone = (err, output...)->
-      debug 'fnDone of fnRetry'
-      tryCnt++
-      if err and tryCnt < tryLimit
-        fn argsToCall...
-      else
-        outCallback err, output...
-    try 
-      argsToCall = args.concat fnDone     
-      fn argsToCall...
-    catch error
-      fnDone error
-
-# _fn.do = (args..., fn)->
-#   debug 'do  with ', 'args=', args, 'fn=', fn
-#   fn args... 
-_fn.delay = (msec, fn)->
-  return (args...)->
-    setTimeout ()->
-      fn args...
-    , msec 
-#   _fn.delay(msec, fn) args...
-
-_fn.wrap = (preFns,postFns)->
-  preFns = [preFns] unless _isArray preFns
-  postFns = [postFns] unless _isArray postFns
-  return (inFns)->
-    inFns = [inFns] unless _isArray inFns
-    return _fn.flow [preFns..., inFns..., postFns...]
-
 _fn.fork = (forkingFns)->
   return (args..., outCallback)->      
     if typeof outCallback isnt 'function'
@@ -181,7 +164,7 @@ _fn.fork.do = (args..., forkingFns, outCallback)->
 
 
 _fn.flow = (flowFns)->
-  _fn.validating flowFns
+  _validating flowFns
   return (args..., outCallback)->  
 
     first = args[0]
@@ -205,15 +188,39 @@ _fn.flow.do = (args..., flowFns)->
   fn = _fn.flow flowFns
   fn args...
 
-_fn.validating = (fns)->
-  _valid = (arr)->
-    for item in arr
-      if _isArray item
-        _valid item
-      else
-        throw new Error 'item of ficent flow must be function or array' unless _isFunction item
+#############################################
+# 유틸리티 고계도 함수
 
-  _valid fns
+_fn.retry = (tryLimit, fn)->
+  return (args..., outCallback)->
+    debug 'fnRetry'
+    tryCnt = 0
+    fnDone = (err, output...)->
+      debug 'fnDone of fnRetry'
+      tryCnt++
+      if err and tryCnt < tryLimit
+        fn argsToCall...
+      else
+        outCallback err, output...
+    try 
+      argsToCall = args.concat fnDone     
+      fn argsToCall...
+    catch error
+      fnDone error
+
+_fn.delay = (msec, fn)->
+  return (args...)->
+    setTimeout ()->
+      fn args...
+    , msec  
+
+_fn.wrap = (preFns,postFns)->
+  preFns = [preFns] unless _isArray preFns
+  postFns = [postFns] unless _isArray postFns
+  return (inFns)->
+    inFns = [inFns] unless _isArray inFns
+    return _fn.flow [preFns..., inFns..., postFns...]
+
 
 ficent = (args..., flowFns)->
   _fn.flow flowFns
