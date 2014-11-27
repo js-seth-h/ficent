@@ -159,6 +159,29 @@ describe 'flow', ()->
 
       done()
 
+  it 'toss data ', (done)-> 
+
+    ctx = {}
+    ctx1 = {}
+    ctx2 = {}
+    
+    f = ficent.fn [ 
+      (ctx, c1,c2, next)-> 
+        next.tossValue = 9
+        next()
+      (ctx, c1,c2,next)->   
+        ctx.tossed = next.tossValue is 9
+        next()
+    ]
+    # f (req,res,next)
+    f ctx, ctx1, ctx2, (err, ctx )->
+      debug  'arguments', arguments
+      assert not util.isError err, 'no error'  
+
+      assert ctx.tossed is true, 'must be tossed'
+
+      done()
+
 
 describe 'retry', ()->    
    

@@ -67,40 +67,73 @@ runFork = (forkingFns, args, outCallback)->
 
   join.out outCallback 
 
-runFlow = (flowFns, err, args, outCallback)->
-  debug 'runFlow start', err, args
-  return outCallback err, args... if flowFns.length is 0   
+runFlow = (flowFns, startErr, args, outCallback)->
+  fnInx = 0
+  _toss = (err, tossArgs...)->
+    _toss.params = tossArgs
 
-  errorHandlerArity = args.length + 2 # include err, callback
-  [fn, fns...] = flowFns  
+    if flowFns.length is fnInx
+      return outCallback err, args...
+
+    fn = flowFns[fnInx]
+    fnInx++
+ 
+    if _isArray fn 
+      fnArr = fn.map (flow)->  
+        return _fn.flow flow if _isArray flow 
+        return flow
+
+      fn = (args..., next)-> runFork fnArr, args, next 
+
+
+    isErrorHandlable = (fn.length is args.length + 2) # include err, callback
+    if err and not isErrorHandlable
+      return _toss err
+
+    if isErrorHandlable
+      fn err, args..., _toss
+    else
+      fn args..., _toss
+
+
+  _toss startErr, args...
+ 
+
+
+
+
+  # debug 'runFlow start', err, args
+  # return outCallback err, args... if flowFns.length is 0   
+
+  # errorHandlerArity = args.length + 2 # include err, callback
+  # [fn, fns...] = flowFns  
   
 
-  _goNext = (err)->
-      debug 'runFlow _goNext : err = ', err
-      runFlow fns, err, args, outCallback  
+  # _goNext = (err)->
+  #     debug 'runFlow _goNext : err = ', err
+  #     runFlow fns, err, args, outCallback  
 
-  if err
-    return _goNext err if _isArray fn
-    return _goNext err if fn.length isnt errorHandlerArity  
+  # if err
+  #   return _goNext err if _isArray fn
+  #   return _goNext err if fn.length isnt errorHandlerArity  
 
-    # flowFns = cutFlowsByArity(flowFns, errorHandlerArity)    
+  #   # flowFns = cutFlowsByArity(flowFns, errorHandlerArity)    
 
-  if _isArray fn 
-    fnArr = fn.map (flow)->  
-      return _fn.flow flow if _isArray flow 
-      return flow
+  # if _isArray fn 
+  #   fnArr = fn.map (flow)->  
+  #     return _fn.flow flow if _isArray flow 
+  #     return flow
 
-    fn = (args..., next)-> runFork fnArr, args, next 
+  #   fn = (args..., next)-> runFork fnArr, args, next 
 
-  argsToCall = args
-  argsToCall = [err].concat args if fn.length is errorHandlerArity
-  try
-    fn argsToCall..., _goNext
-  catch error
-    _goNext error
+  # argsToCall = args
+  # argsToCall = [err].concat args if fn.length is errorHandlerArity
+  # try
+  #   fn argsToCall..., _goNext
+  # catch error
+  #   _goNext error
      
 
-_fn = {}
 
 _validating = (fns)->
   _valid = (arr)->
@@ -112,6 +145,8 @@ _validating = (fns)->
 
   _valid fns
  
+
+_fn = {}
 _fn.join = (strict = true)->
   errors = []
   results = []
