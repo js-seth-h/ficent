@@ -60,10 +60,7 @@ runFork = (forkingFns, args, outCallback)->
   join = ficent.join()
   forkingFns.forEach (flow)->
     cbIn = join.in()
-    try 
-      flow args..., cbIn
-    catch error 
-      cbIn error 
+    flow args..., cbIn
 
   join.out outCallback 
 
@@ -151,6 +148,7 @@ _fn.join = (strict = true)->
   errors = []
   results = []
   finished = [] 
+  inFns = []
   outFn = undefined
   resultsObj = {}
   callOut = ()->   
@@ -158,6 +156,13 @@ _fn.join = (strict = true)->
     if allFnished and outFn
       err = unifyErrors errors
       results.obj = resultsObj
+
+      # debug '===================================================='
+      for fn in inFns
+        for own prop, value of fn
+          debug 'outFn << ', prop, ':', value
+          outFn[prop] = value
+
       outFn err, results
 
   fns = 
@@ -172,7 +177,7 @@ _fn.join = (strict = true)->
         resultsObj[varName] = resultsObj[varName]  ||  [] 
         varInx = results.length
         resultsObj[varName].push undefined
-      return (err, values...)->
+      _cb = (err, values...)->
         throw new Error 'should call `callback` once' if finished[inx] and strict
         errors[inx] = err
         values = values[0] if values.length is 1
@@ -180,7 +185,13 @@ _fn.join = (strict = true)->
         if varName
           resultsObj[varName][inx] = values
         finished[inx] = true
+
+        # for own prop, value of _cb
+        #   outFn[prop] = value
+
         callOut()
+      inFns.push _cb
+      return _cb
     out: (fn)->
       outFn = fn
       callOut()
