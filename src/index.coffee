@@ -60,6 +60,11 @@ runFork = (forkingFns, args, outCallback)->
   join = ficent.join()
   forkingFns.forEach (flow)->
     cbIn = join.in()
+
+    for own prop, value of outCallback
+      debug 'fork.in << ', prop, ':', value
+      cbIn[prop] = value
+
     flow args..., cbIn
 
   join.out outCallback 

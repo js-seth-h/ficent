@@ -485,10 +485,20 @@ describe 'toss', ()->
         toss.c = toss.a * toss.b
         output = toss
         toss null
+      [
+        (toss)-> 
+          toss.c2 = toss.c * 2
+          toss()
+        (toss)->   
+          toss.c3 = toss.c * 3
+          toss()
+      ] 
     ] 
     f (err )->
       assert not util.isError err, 'no error'   
       assert output.c is 63, '= 7 * 9 '
+      assert output.c2 is 126, 'c * 2'
+      assert output.c3 is 189, 'c * 3 '
       done()
 
   it 'toss err 1 ', (done)-> 
