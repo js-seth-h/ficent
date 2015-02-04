@@ -3,6 +3,7 @@ ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
 
+fs = require 'fs'
 debug = require('debug')('test')
 
 func1 = (ctx, next)-> 
@@ -451,14 +452,14 @@ describe 'toss', ()->
     ctx2 = {}
     
     f = ficent.fn [ 
-      (ctx, c1,c2, next)-> 
-        next.tossValue = 9
-        next()
-      (ctx, c1,c2,next)->   
-        ctx.tossed = next.tossValue is 9
-        next()
+      (ctx, c1,c2, toss)-> 
+        toss.tossValue = 9
+        toss()
+      (ctx, c1,c2,toss)->   
+        ctx.tossed = toss.tossValue is 9
+        toss()
     ]
-    # f (req,res,next)
+    # f (req,res,toss)
     f ctx, ctx1, ctx2, (err, ctx )->
       debug  'arguments', arguments
       assert not util.isError err, 'no error'  
@@ -470,23 +471,54 @@ describe 'toss', ()->
 
   it 'toss data in fork ', (done)-> 
 
-    debug '>>>>>>>>>>----------------------------------------<<<<<<<<<<<<<'
     output = {}
     f = ficent.fn [ 
       [
-        (next)-> 
-          next.b = 7
-          next()
-        (next)->   
-          next.a = 9
-          next()
+        (toss)-> 
+          toss.b = 7
+          toss()
+        (toss)->   
+          toss.a = 9
+          toss()
       ]
-      (next)->
-        next.c = next.a * next.b
-        output = next
-        next null
+      (toss)->
+        toss.c = toss.a * toss.b
+        output = toss
+        toss null
     ] 
     f (err )->
       assert not util.isError err, 'no error'   
       assert output.c is 63, '= 7 * 9 '
+      done()
+
+  it 'toss err 1 ', (done)-> 
+
+    output = {}
+    f = ficent.fn [ 
+      (toss)-> 
+        fs.rename "test/test0", 'test/test1', toss.err (err)->
+          toss null
+      (toss)->   
+        toss.a = 9
+        toss()
+    ] 
+    f (err )->
+      debug err
+      assert util.isError err, 'got error'   
+      done()
+
+
+  it 'toss err 2 ', (done)-> 
+
+    output = {}
+    f = ficent.fn [ 
+      (toss)-> 
+        fs.rename "test/test0", 'test/test1', toss
+      (toss)->   
+        toss.a = 9
+        toss()
+    ] 
+    f (err )->
+      debug err
+      assert util.isError err, 'got error'   
       done()

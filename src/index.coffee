@@ -91,6 +91,16 @@ runFlow = (flowFns, startErr, args, outCallback)->
       fn err, args..., _toss
     else
       fn args..., _toss
+      
+  _toss.err = (fn)->
+    return (errMayBe, args...)->
+      # debug 'err-to', 'take', arguments
+      if _isError errMayBe # Stupid Proof
+        _toss errMayBe, args...
+      try 
+        fn errMayBe, args...
+      catch err
+        _toss err
 
 
   _toss startErr, args...
