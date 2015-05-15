@@ -32,7 +32,8 @@ _toString = Object.prototype.toString
 _isArray = Array.isArray or (obj) ->
   _toString.call(obj) is "[object Array]"
 _isError = (obj)-> 
-  _toString.call(obj) is "[object Error]"
+  return obj instanceof Error
+  # _toString.call(obj) is "[object Error]" # Error을 상속받으면 부정확.
 _isFunction = (obj)->
   return !!(obj && obj.constructor && obj.call && obj.apply);
 _isObject = (obj)->
