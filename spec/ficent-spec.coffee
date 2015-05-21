@@ -159,7 +159,43 @@ describe 'flow', ()->
       assert ctx.b is undefined , "must not exist"
 
       done()
+  it 'occur err no cature in first', (done)->  
+    ctx = {}
+    func_mk_Err = (ctx, next)->
+      debug 'mk Err'
+      throw new Error 'FAKE'
+    func_Err = (err, ctx, next)->
+      debug 'got Err',err
+      ctx.errHandler = 1
+      assert err, 'must get Error'
+      next()
 
+    f = ficent.fn [ func_mk_Err, func_Err]
+      
+    # f (req,res,next)
+    f ctx, (err, ctx)->
+      debug 'end ', arguments 
+      assert util.isError err, 'occerror error'
+      assert ctx.errHandler is 1, 'got handler'
+      done()
+  it 'occur err no cature in not first', (done)->  
+    ctx = {}
+    func_mk_Err = (ctx, next)->
+      debug 'mk Err'
+      next null
+    func_Err = (err, ctx, next)->
+      debug 'got Err',err
+      assert err, 'must get Error'
+      throw new Error 'FAKE'
+      next()
+
+    f = ficent.fn [ func_mk_Err, func_Err]
+      
+    # f (req,res,next)
+    f ctx, (err, ctx)->
+      debug 'end ', arguments 
+      assert util.isError err, 'occerror error'
+      done()
 
 
 describe 'retry', ()->    

@@ -93,11 +93,14 @@ runFlow = (flowFns, startErr, args, outCallback)->
     if err and not isErrorHandlable
       return _toss err
 
-    if isErrorHandlable
-      fn err, args..., _toss
-    else
-      fn args..., _toss
-      
+    try
+      if isErrorHandlable
+        fn err, args..., _toss
+      else
+        fn args..., _toss
+    catch newErr
+      _toss newErr
+
   _toss.err = (fn)->
     return (errMayBe, args...)->
       # debug 'err-to', 'take', arguments
