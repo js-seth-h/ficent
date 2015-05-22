@@ -1,4 +1,4 @@
-process.env.DEBUG = "*"
+process.env.DEBUG = "test"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -497,8 +497,9 @@ describe 'toss', ()->
     ]
     # f (req,res,toss)
     f ctx, ctx1, ctx2, (err, ctx )->
-      debug  'arguments', arguments
-      assert not util.isError err, 'no error'  
+      debug  'toss data', arguments
+      expect err 
+        .toBe undefined
 
       assert ctx.tossed is true, 'must be tossed'
 
@@ -531,7 +532,9 @@ describe 'toss', ()->
       ] 
     ] 
     f (err )->
-      assert not util.isError err, 'no error'   
+      debug 'toss data in fork', err
+      expect err 
+        .toBe undefined
       assert output.c is 63, '= 7 * 9 '
       assert output.c2 is 126, 'c * 2'
       assert output.c3 is 189, 'c * 3 '
@@ -550,7 +553,8 @@ describe 'toss', ()->
     ] 
     f (err )->
       debug err
-      assert util.isError err, 'got error'   
+      expect err 
+        .not.toBe null
       done()
 
 
@@ -566,5 +570,60 @@ describe 'toss', ()->
     ] 
     f (err )->
       debug err
-      assert util.isError err, 'got error'   
+      expect err 
+        .not.toBe null
       done()
+
+describe 'err catch', ()->
+  f = (callback)-> callback null, 5
+  e = (callback)-> callback new Error 'in E'
+  it 'no err ', (done)-> 
+    a = ficent.err (callback)->
+      debug 1
+      f callback.err (err, val)-> 
+        debug 2
+        callback null
+    a (err)->
+
+      debug 'err catch no err', err
+      expect err 
+        .toBe null
+      done()
+
+  it 'catch ', (done)-> 
+    a = ficent.err (callback)->
+      throw new Error 'TEST'
+      f callback.err (err, val)-> 
+        callback null
+    a (err)->
+
+      debug 'catch ', err
+      expect err 
+        .not.toBe null
+      done()
+
+
+  it 'catch inside ', (done)-> 
+    a = ficent.err (callback)->
+      f callback.err (err, val)-> 
+        throw new Error 'TEST'
+        callback null
+    a (err)->
+
+      debug 'catch  inside', err
+      expect err 
+        .not.toBe null
+      done()
+
+
+  it 'toss before callbacked', (done)-> 
+    a = ficent.err (callback)->
+      e callback.err (err, val)-> 
+        throw new Error 'TEST2'
+        callback null
+    a (err)->
+      debug 'toss before callbacked ', err
+      expect err 
+        .not.toBe null
+      done()
+

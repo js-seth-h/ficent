@@ -41,6 +41,19 @@ _isObject = (obj)->
 
 _emptyFn = ()->
 
+
+tossableFunction = (callback)->
+  callback.err = (fn)->
+    return (errMayBe, args...)->
+      # debug 'err-to', 'take', arguments
+      if _isError errMayBe # Stupid Proof
+        return callback errMayBe, args...
+      try 
+        fn errMayBe, args...
+      catch err
+        callback err
+
+        
 # cutFlowsByArity = (flowFns, arity)->
 #   debug 'cutFlowsByArity  ', arity     
 #   for fn, inx in flowFns
@@ -100,16 +113,16 @@ runFlow = (flowFns, startErr, args, outCallback)->
         fn args..., _toss
     catch newErr
       _toss newErr
-
-  _toss.err = (fn)->
-    return (errMayBe, args...)->
-      # debug 'err-to', 'take', arguments
-      if _isError errMayBe # Stupid Proof
-        _toss errMayBe, args...
-      try 
-        fn errMayBe, args...
-      catch err
-        _toss err
+  tossableFunction _toss
+  # _toss.err = (fn)->
+  #   return (errMayBe, args...)->
+  #     # debug 'err-to', 'take', arguments
+  #     if _isError errMayBe # Stupid Proof
+  #       return _toss errMayBe, args...
+  #     try 
+  #       fn errMayBe, args...
+  #     catch err
+  #       _toss err
 
 
   _toss startErr, args...
@@ -287,6 +300,23 @@ _fn.wrap = (preFns,postFns)->
     return _fn.flow [preFns..., inFns..., postFns...]
 
 
+
+_fn.err = (fn)->
+  return (args..., callback)->
+    tossableFunction callback
+    try
+      fn args..., callback
+    catch e
+      callback e
+
+# _fn.catch 
+###
+구현할까 생각해봤는데 의미가 없다.  
+_fn.catch를 사용하면, 에러가 나던 말던 신경 안쓰는 루틴이기도 한데다가 
+callback이 없으니 구조적으로 깊이 파고들 이유가 없다는 것이다. 
+그냥 try catch 해도 된다. 
+###
+
 ficent = (args..., flowFns)->
   _fn.flow flowFns
 
@@ -294,6 +324,10 @@ ficent = (args..., flowFns)->
 ficent.fn = _fn.flow
 ficent.do = _fn.flow.do
 ficent.flow = _fn.flow
+
+
+ficent.err = _fn.err
+
 
 # 같은 입력 요소에 대한 병렬 실행
 ficent.fork = _fn.fork
