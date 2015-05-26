@@ -574,7 +574,6 @@ describe 'toss', ()->
         .not.toBe null
       done()
 
-describe 'err catch', ()->
   f = (callback)-> callback null, 5
   e = (callback)-> callback new Error 'in E'
   it 'no err ', (done)-> 
@@ -627,3 +626,9 @@ describe 'err catch', ()->
         .not.toBe null
       done()
 
+# describe 'ficent.join', ()->
+#   it 'throw in out()', (done)->
+
+#     join = ficent.join()
+#     join.out ()->
+#       

@@ -39,7 +39,9 @@ _isFunction = (obj)->
 _isObject = (obj)->
   return (!!obj && obj.constructor == Object);
 
-_emptyFn = ()->
+_defaultCallbackFn = (err)->
+  if err
+    throw err 
 
 
 tossableFunction = (callback)->
@@ -234,7 +236,7 @@ _fn.fork = (forkingFns)->
   return (args..., outCallback)->      
     if typeof outCallback isnt 'function'
       args.push outCallback
-      outCallback = ()-> 
+      outCallback = _defaultCallbackFn
     runFork forkingFns, args, outCallback
 _fn.fork.do = (args..., forkingFns, outCallback)->
   f = _fn.fork forkingFns
@@ -256,7 +258,7 @@ _fn.flow = (flowFns)->
       args.push outCallback
       outCallback = undefined
     unless outCallback
-      outCallback = _emptyFn
+      outCallback = _defaultCallbackFn
 
     # debug '_fn.flow arity = ', args.length
     debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
