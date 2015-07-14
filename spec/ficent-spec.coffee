@@ -1,4 +1,4 @@
-process.env.DEBUG = "test"
+process.env.DEBUG = "test, ficent"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -17,12 +17,10 @@ func2 = (ctx, next)->
 describe 'flow', ()->    
 
   it 'run flow with context arguments ', (done)-> 
-
     ctx = 
       name : 'context base'
     
-
-    ficent.do ctx, [
+    fx = ficent [
       func1, 
       func2, 
       (err, ctx, next)->
@@ -36,6 +34,7 @@ describe 'flow', ()->
           .toBeTruthy()
         done()
     ]
+    fx ctx
   
   it 'run function created by flow.fn', (done)-> 
 
@@ -197,96 +196,7 @@ describe 'flow', ()->
       assert util.isError err, 'occerror error'
       done()
 
-
-describe 'retry', ()->    
-   
-  it 'retry and fail ', (done)-> 
-
-    ctx = 
-      tryCnt : 0
-    
-    func_mk_Err = (ctx, next)->
-      ctx.tryCnt++
-      debug 'mk Err', ctx.tryCnt
-      next new Error 'FAKE'
-    f = ficent.fn [ func_mk_Err ]
-
-    g = ficent.fn [
-      ficent.retry 3, f
-    ]
-    # f (req,res,next)
-    debug 'RETRY'
-    g ctx, (err, ctx)->
-      # debug err, ctx
-      assert util.isError err, 'error'
-      assert ctx.tryCnt is 3 , 'try 3'
-      assert err, "must exist"
-      done()
  
-  it 'retry and success', (done)-> 
-
-    ctx = 
-      tryCnt : 0
-    
-    func_mk_Err = (ctx, next)->
-      ctx.tryCnt++
-      debug 'mk Err', ctx.tryCnt
-      if ctx.tryCnt is 2
-        return next()
-      next new Error 'FAKE'
-    f = ficent.fn [ func_mk_Err ]
-
-    g = ficent.retry 5, f
-    
-    # f (req,res,next)
-    g ctx, (err, ctx)->
-      debug 'err, ctx', err, ctx
-      assert not util.isError err, 'no error'
-      assert ctx.tryCnt is 2 , 'try 2 and success' 
-      done()
-
-  it 'call retry directly ', (done)-> 
-
-    ctx = 
-      tryCnt : 0
-    
-    func_mk_Err = (ctx, next)->
-      ctx.tryCnt++
-      debug 'mk Err', ctx.tryCnt, ctx
-      if ctx.tryCnt is 2
-        return next null, ctx
-      next new Error 'FAKE just fn' 
-
-    g = ficent.retry 5, func_mk_Err
-    
-    # f (req,res,next)
-    g ctx, (err, ctx)->
-      debug 'err, ctx', err, ctx
-      assert not util.isError err, 'no error'
-      assert ctx.tryCnt is 2 , 'try 2 and success' 
-      done()
-
-  it 'call retry in flow', (done)-> 
-
-    ctx = 
-      tryCnt : 0
-    
-    func_mk_Err = (ctx, next)->
-      ctx.tryCnt++
-      debug 'mk Err', ctx.tryCnt, ctx
-      if ctx.tryCnt is 2
-        return next null, ctx
-      next new Error 'FAKE just fn' 
-
-    g = ficent.fn [
-      ficent.retry 5, func_mk_Err
-    ]
-    # f (req,res,next)
-    g ctx, (err, ctx)->
-      debug 'err, ctx', err, ctx
-      assert not util.isError err, 'no error'
-      assert ctx.tryCnt is 2 , 'try 2 and success' 
-      done() 
  
 describe 'fork', ()->    
   it 'basic', (done)->
@@ -343,18 +253,6 @@ describe 'fork', ()->
     assert ctx.cnt is 25 , 'fork count 25 ' 
     done()
  
-  it 'do with arguments', (done)->
-    forkingFns = []
-    ctx = 
-      cnt : 0
-    for i  in [0...5]
-      forkingFns.push (num, next)->  
-        ctx.cnt += num
-        next()
-    f = ficent.fork.do 5, forkingFns, (err)->
-      assert ctx.cnt is 25 , 'fork count 25 ' 
-      done()
-   
 
 
 describe 'flow  - forkjoin', ()->    
@@ -392,35 +290,6 @@ describe 'flow  - forkjoin', ()->
 
       done()
   
-
-   
-
-
-describe 'run now', ()->   
-  it 'flow.do', (done)->    
-    ficent.do {num:5}, [
-      (ctx, next)-> 
-        ctx.num += 10
-        next()
-      (ctx, next)-> 
-        ctx.num -= 100
-        next()
-      (ctx, next)-> 
-        assert.equal ctx.num, -85
-        done()
-    ]  
-
-
-  it 'flow.run with no arg', (done)->    
-    ficent.do  [
-      (next)-> 
-        # console.log 'arguments= ' ,arguments
-        next()
-      (next)-> 
-        done()
-    ]  
-
-
 
 
 
@@ -460,22 +329,6 @@ describe 'wrap', ()->
     
     wrapper(inFn) {}
  
-describe 'delay', ()->    
-  it 'delayed ', (done)-> 
-
-    str = "A"
-    fn = ()->
-      str += "C"
-    dfn = ficent.delay 100, fn
-
-    dfn()
-    str += 'B'
-
-    setTimeout ()->
-      expect(str).toEqual "ABC"
-      done()
-
-    , 100
  
 
 describe 'toss', ()->

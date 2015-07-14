@@ -50,155 +50,168 @@ toss =
     for t in srcFn
       for own prop, val of t
         fn[prop] = val
-        debug 'merge', prop, '=', val
-    
+        debug 'assign', prop, '=', val
 
-tossableFunction = (callback)->
-  callback.err = (fn)->
-    return (errMayBe, args...)->
-      # debug 'err-to', 'take', arguments
-      if _isError errMayBe # Stupid Proof
-        return callback errMayBe, args...
-      try 
-        fn errMayBe, args...
-      catch err
-        callback err
-
-        
-# cutFlowsByArity = (flowFns, arity)->
-#   debug 'cutFlowsByArity  ', arity     
-#   for fn, inx in flowFns
-#     debug 'fn.length', fn.length
-#     if not _isArray(fn) and fn.length is arity
-#       return flowFns[inx..] 
-#   return []
-
-unifyErrors = (errors)->
-  errs = errors.filter (err)-> err 
-  error = undefined
-  if errs.length > 0
-    error = errs[0]
-    error.errors = errors
-  return error  
+  mixErr: (callback)->
+    callback.err = (nextFn)->
+      return (errMayBe, args...)->
+        # debug 'err-to', 'take', arguments
+        if _isError errMayBe # Stupid Proof
+          return callback errMayBe, args...
+        try 
+          nextFn errMayBe, args...
+        catch err
+          callback err
  
-runFork = (forkingFns, args, outCallback)-> 
-  join = ficent.join()
-  forkingFns.forEach (flow)->
-    cbIn = join.in()
+ 
+# runFork = (forkingFns, args, outCallback)-> 
+#   join = createJoin()
+#   forkingFns.forEach (flow)->
+#     cbIn = join.in()
+#     toss.assign cbIn, outCallback
 
-    for own prop, value of outCallback
-      debug 'fork.in << ', prop, ':', value
-      cbIn[prop] = value
+#     flow args..., cbIn
 
-    flow args..., cbIn
+#   join.out outCallback 
 
-  join.out outCallback 
 
-runFlow = (flowFns, startErr, args, outCallback)->
+createMuxFn = (fns)->  
+  forkingFns = fns.map (flow)->  
+    return createSeqFn flow if _isArray flow
+    return flow
+
+  newFn = (args..., outCallback)-> 
+    # runFork fnArr, args, next 
+    if typeof outCallback isnt 'function'
+      args.push outCallback
+      outCallback = _defaultCallbackFn
+
+    join = createJoin()
+    forkingFns.forEach (flow)->
+      cbIn = join.in()
+      toss.assign cbIn, outCallback
+      flow args..., cbIn
+    join.out outCallback 
+
+  return newFn
+
+createSeqFn = (flowFns)->
+  _validating = (fns)->
+    _valid = (arr)->
+      for item in arr
+        if _isArray item
+          _valid item
+        else
+          throw new Error 'item of ficent flow must be function or array' unless _isFunction item
+    _valid fns 
+
   fnInx = 0
+  contextArgs = null
+  outCallback = _defaultCallbackFn
   _toss = (err, tossArgs...)->
     _toss.params = tossArgs
-
     if flowFns.length is fnInx
       toss.assign outCallback, _toss
-      return outCallback err, args...
+      return outCallback err, contextArgs...
 
     fn = flowFns[fnInx]
-    fnInx++
- 
+    debug 'createSeqFn', 'toss', fnInx
+    fnInx++ 
+
     if _isArray fn 
-      fnArr = fn.map (flow)->  
-        return _fn.flow flow if _isArray flow 
-        return flow
+      fn = createMuxFn fn 
 
-      fn = (args..., next)-> runFork fnArr, args, next 
-
-
-    isErrorHandlable = (fn.length is args.length + 2) # include err, callback
+    unless _isFunction fn
+      outCallback new Error 'ficent only accept Function or Array'
+      return
+    isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
     if err and not isErrorHandlable
       return _toss err
 
     try
       if isErrorHandlable
-        fn err, args..., _toss
+        fn err, contextArgs..., _toss
       else
-        fn args..., _toss
+        fn contextArgs..., _toss
     catch newErr
       _toss newErr
-  tossableFunction _toss
-  # _toss.err = (fn)->
-  #   return (errMayBe, args...)->
-  #     # debug 'err-to', 'take', arguments
-  #     if _isError errMayBe # Stupid Proof
-  #       return _toss errMayBe, args...
-  #     try 
-  #       fn errMayBe, args...
-  #     catch err
-  #       _toss err
 
+  _validating flowFns
+  toss.mixErr _toss 
 
-  _toss startErr, args...
- 
-
-
-
-
-  # debug 'runFlow start', err, args
-  # return outCallback err, args... if flowFns.length is 0   
-
-  # errorHandlerArity = args.length + 2 # include err, callback
-  # [fn, fns...] = flowFns  
+  startFn = (args..., done)->   
+    debug 'createSeqFn', 'startFn'
+    first = args[0]
+    startErr = null
+    # debug 'first', first
+    if first is null or first is undefined or _isError first
+      startErr = args.shift()
+      debug 'set startErr = ', startErr
   
+    if done and typeof done isnt 'function'
+      args.push done
+    else 
+      outCallback = done
+      # outCallback = undefined
+    # unless outCallback
+      # outCallback = _defaultCallbackFn
 
-  # _goNext = (err)->
-  #     debug 'runFlow _goNext : err = ', err
-  #     runFlow fns, err, args, outCallback  
+    # debug '_fn.flow arity = ', args.length
+    # debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
+    # runFlow flowFns, err, args, outCallback
+    contextArgs = args
+    _toss startErr, args... 
 
-  # if err
-  #   return _goNext err if _isArray fn
-  #   return _goNext err if fn.length isnt errorHandlerArity  
+  return startFn
 
-  #   # flowFns = cutFlowsByArity(flowFns, errorHandlerArity)    
+# runFlow = (flowFns, startErr, args, outCallback)->
+#   fnInx = 0
+#   _toss = (err, tossArgs...)->
+#     _toss.params = tossArgs
 
-  # if _isArray fn 
-  #   fnArr = fn.map (flow)->  
-  #     return _fn.flow flow if _isArray flow 
-  #     return flow
+#     if flowFns.length is fnInx
+#       toss.assign outCallback, _toss
+#       return outCallback err, args...
 
-  #   fn = (args..., next)-> runFork fnArr, args, next 
-
-  # argsToCall = args
-  # argsToCall = [err].concat args if fn.length is errorHandlerArity
-  # try
-  #   fn argsToCall..., _goNext
-  # catch error
-  #   _goNext error
-     
-
-
-_validating = (fns)->
-  _valid = (arr)->
-    for item in arr
-      if _isArray item
-        _valid item
-      else
-        throw new Error 'item of ficent flow must be function or array' unless _isFunction item
-
-  _valid fns
+#     fn = flowFns[fnInx]
+#     fnInx++
  
+#     if _isArray fn 
+#       fn = createMuxFn fn 
 
-_fn = {}
-_fn.join = (strict = true)->
+#     isErrorHandlable = (fn.length is args.length + 2) # include err, callback
+#     if err and not isErrorHandlable
+#       return _toss err
+
+#     try
+#       if isErrorHandlable
+#         fn err, args..., _toss
+#       else
+#         fn args..., _toss
+#     catch newErr
+#       _toss newErr
+#   toss.mixErr _toss 
+#   _toss startErr, args... 
+ 
+createJoin = (strict = true)->
   errors = []
   results = []
   finished = [] 
   inFns = []
   outFn = undefined
-  # resultsObj = {}
+
+  _unifyErrors = (errors)->
+    errs = errors.filter (err)-> err 
+    error = undefined
+    if errs.length > 0
+      error = errs[0]
+      error.errors = errors
+    return error  
+
   callOut = ()->   
     allFnished = finished.every (v)-> v
     if allFnished and outFn
-      err = unifyErrors errors
+      err = _unifyErrors errors
       # results.obj = resultsObj
       toss.assign outFn, inFns...
       outFn err, results
@@ -210,12 +223,7 @@ _fn.join = (strict = true)->
       errors.push undefined
       results.push undefined
       finished.push false
-
-      # if varName
-        # resultsObj[varName] = resultsObj[varName]  ||  [] 
-        # varInx = results.length
-        # resultsObj[varName].push undefined
-
+ 
       _cb = (err, values...)->
         throw new Error 'should call `callback` once' if finished[inx] and strict
         errors[inx] = err
@@ -225,9 +233,6 @@ _fn.join = (strict = true)->
           results[varName] = values
         finished[inx] = true
 
-        # for own prop, value of _cb
-        #   outFn[prop] = value
-
         callOut()
       inFns.push _cb
       return _cb
@@ -236,68 +241,52 @@ _fn.join = (strict = true)->
       callOut()
   return fns
   
+_fn = {}
+_fn.join = createJoin
+# _fn.fork = (forkingFns)->
+#   return (args..., outCallback)->      
+#     if typeof outCallback isnt 'function'
+#       args.push outCallback
+#       outCallback = _defaultCallbackFn
+#     runFork forkingFns, args, outCallback
 
-_fn.fork = (forkingFns)->
-  return (args..., outCallback)->      
-    if typeof outCallback isnt 'function'
-      args.push outCallback
-      outCallback = _defaultCallbackFn
-    runFork forkingFns, args, outCallback
-_fn.fork.do = (args..., forkingFns, outCallback)->
-  f = _fn.fork forkingFns
-  f args..., outCallback 
+_fn.fork = createMuxFn
+_fn.flow = createSeqFn
+# _fn.flow = (flowFns)->
+#   _validating = (fns)->
+#     _valid = (arr)->
+#       for item in arr
+#         if _isArray item
+#           _valid item
+#         else
+#           throw new Error 'item of ficent flow must be function or array' unless _isFunction item
 
+#     _valid fns
+   
 
-_fn.flow = (flowFns)->
-  _validating flowFns
-  return (args..., outCallback)->  
+#   _validating flowFns
+#   return (args..., outCallback)->  
 
-    first = args[0]
-    err = null
-    # debug 'first', first
-    if first is null or first is undefined or _isError first
-      err = args.shift()
-      debug 'set err = ', err
+#     first = args[0]
+#     err = null
+#     # debug 'first', first
+#     if first is null or first is undefined or _isError first
+#       err = args.shift()
+#       debug 'set err = ', err
   
-    if outCallback and typeof outCallback isnt 'function'
-      args.push outCallback
-      outCallback = undefined
-    unless outCallback
-      outCallback = _defaultCallbackFn
+#     if outCallback and typeof outCallback isnt 'function'
+#       args.push outCallback
+#       outCallback = undefined
+#     unless outCallback
+#       outCallback = _defaultCallbackFn
 
-    # debug '_fn.flow arity = ', args.length
-    debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
-    runFlow flowFns, err, args, outCallback
+#     # debug '_fn.flow arity = ', args.length
+#     debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
+#     runFlow flowFns, err, args, outCallback
 
-_fn.flow.do = (args..., flowFns)->
-  fn = _fn.flow flowFns
-  fn args...
 
 #############################################
 # 유틸리티 고계도 함수
-
-_fn.retry = (tryLimit, fn)->
-  return (args..., outCallback)->
-    debug 'fnRetry'
-    tryCnt = 0
-    fnDone = (err, output...)->
-      debug 'fnDone of fnRetry'
-      tryCnt++
-      if err and tryCnt < tryLimit
-        fn argsToCall...
-      else
-        outCallback err, output...
-    try 
-      argsToCall = args.concat fnDone     
-      fn argsToCall...
-    catch error
-      fnDone error
-
-_fn.delay = (msec, fn)->
-  return (args...)->
-    setTimeout ()->
-      fn args...
-    , msec  
 
 _fn.wrap = (preFns,postFns)->
   preFns = [preFns] unless _isArray preFns
@@ -306,11 +295,9 @@ _fn.wrap = (preFns,postFns)->
     inFns = [inFns] unless _isArray inFns
     return _fn.flow [preFns..., inFns..., postFns...]
 
-
-
 _fn.err = (fn)->
   return (args..., callback)->
-    tossableFunction callback
+    toss.mixErr callback
     try
       fn args..., callback
     catch e
@@ -326,13 +313,9 @@ callback이 없으니 구조적으로 깊이 파고들 이유가 없다는 것�
 
 ficent = (args..., flowFns)->
   _fn.flow flowFns
-
-
-ficent.fn = _fn.flow
-ficent.do = _fn.flow.do
-ficent.flow = _fn.flow
-
-
+ 
+ficent.fn = _fn.flow 
+ficent.flow = _fn.flow 
 ficent.err = _fn.err
 
 
@@ -341,15 +324,9 @@ ficent.fork = _fn.fork
 
 
 #############################################
-# 유틸리티 고계도 함수
-
-# 반복
-ficent.retry = _fn.retry
+# 유틸리티 고계도 함수 
 # 앞뒤로 감싸기.
-ficent.wrap = _fn.wrap
-# 지연 추가
-ficent.delay = _fn.delay
-
+ficent.wrap = _fn.wrap 
 
 #############################################
 # fork-join 패턴 구현체
