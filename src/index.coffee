@@ -47,6 +47,7 @@ toss =
   assign : (fn, srcFn...)->
     for t in srcFn
       for own prop, val of t
+        continue if prop is 'err'
         fn[prop] = val
         debug 'assign', prop, '=', val
 
@@ -98,7 +99,8 @@ createSeqFn = (flowFns)->
     _toss.params = tossArgs
     if flowFns.length is fnInx
       toss.assign outCallback, _toss
-      return outCallback err, contextArgs...
+       
+      return outCallback err, tossArgs... #  contextArgs...
 
     fn = flowFns[fnInx]
     debug 'createSeqFn', 'toss', fnInx
@@ -132,7 +134,7 @@ createSeqFn = (flowFns)->
     # debug 'first', first
     if first is null or first is undefined or _isError first
       startErr = args.shift()
-      debug 'set startErr = ', startErr
+      debug 'createSeqFn', 'set startErr = ', startErr
   
     if done and typeof done isnt 'function'
       args.push done

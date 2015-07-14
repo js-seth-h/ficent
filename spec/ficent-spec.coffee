@@ -1,4 +1,4 @@
-process.env.DEBUG = "test"
+process.env.DEBUG = "test, ficent"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -15,7 +15,6 @@ func2 = (ctx, next)->
 
 
 describe 'flow', ()->    
-
   it 'run flow with context arguments ', (done)-> 
     ctx = 
       name : 'context base'
@@ -46,7 +45,7 @@ describe 'flow', ()->
       func1, 
       func2
     ]
-    _fn ctx, (err, ctx)->
+    _fn ctx, (err)->
       debug  'arguments', arguments
       expect err
         .toEqual null
@@ -72,7 +71,7 @@ describe 'flow', ()->
     f = ficent.fn [ f1, f2]
     # f (req,res,next)
     debug 'run no arg'
-    f (err )->
+    f (err)->
       assert not util.isError err, 'no error'
       # assert ctx.a , "must exist"
       # assert ctx.b , "must exist"
@@ -94,7 +93,7 @@ describe 'flow', ()->
         next()
     ]
     # f (req,res,next)
-    f ctx, ctx1, ctx2, (err, ctx )->
+    f ctx, ctx1, ctx2, (err)->
       debug  'arguments', arguments
       assert not util.isError err, 'no error'
       assert ctx.a , "must exist"
@@ -111,7 +110,7 @@ describe 'flow', ()->
     f = ficent.fn [ g ]
 
     # f (req,res,next)
-    f ctx, (err, ctx )->
+    f ctx, (err)->
       debug  'arguments', arguments
       assert not util.isError err, 'no error'
       assert ctx.a , "must exist"
@@ -134,7 +133,7 @@ describe 'flow', ()->
     f = ficent.fn [ func1, func_mk_Err, func2, func_Err]
       
     # f (req,res,next)
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'end ', arguments 
       assert not util.isError err, 'no error'
       assert ctx.a , "must exist"
@@ -151,7 +150,7 @@ describe 'flow', ()->
     f = ficent.fn [ func1, func_mk_Err, func2]
       
     # f (req,res,next)
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'end ', arguments 
       assert util.isError err, 'no error'
       assert ctx.a , "must exist"
@@ -172,7 +171,7 @@ describe 'flow', ()->
     f = ficent.fn [ func_mk_Err, func_Err]
       
     # f (req,res,next)
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'end ', arguments 
       assert util.isError err, 'occerror error'
       assert ctx.errHandler is 1, 'got handler'
@@ -191,7 +190,7 @@ describe 'flow', ()->
     f = ficent.fn [ func_mk_Err, func_Err]
       
     # f (req,res,next)
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'end ', arguments 
       assert util.isError err, 'occerror error'
       done()
@@ -264,7 +263,7 @@ describe 'flow  - forkjoin', ()->
       next()
      ] ]  
       
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'errs, ctx', err, ctx     
       assert not util.isError err, 'no error'
       assert ctx.a , "must exist"
@@ -280,7 +279,7 @@ describe 'flow  - forkjoin', ()->
       ] ]  
       
     # f (req,res,next)
-    f ctx, (err, ctx)->
+    f ctx, (err)->
       debug 'errs, ctx', err, ctx  
       assert util.isError err, 'error'
       assert util.isError err.errors[2], 'error'
@@ -349,7 +348,7 @@ describe 'toss', ()->
         toss()
     ]
     # f (req,res,toss)
-    f ctx, ctx1, ctx2, (err, ctx )->
+    f ctx, ctx1, ctx2, (err)->
       debug  'toss data', arguments
       expect err 
         .toBe undefined
@@ -384,7 +383,7 @@ describe 'toss', ()->
           toss()
       ] 
     ] 
-    f (err )->
+    f (err)->
       debug 'toss data in fork', err
       expect err 
         .toBe undefined
@@ -404,7 +403,7 @@ describe 'toss', ()->
         toss.a = 9
         toss()
     ] 
-    f (err )->
+    f (err)->
       debug err
       expect err 
         .not.toBe null
@@ -421,7 +420,7 @@ describe 'toss', ()->
         toss.a = 9
         toss()
     ] 
-    f (err )->
+    f (err)->
       debug err
       expect err 
         .not.toBe null
@@ -506,6 +505,37 @@ describe 'toss', ()->
         .toBe null
       expect outCall.ag 
         .toEqual 11 * 12 
+      done()
+    f outCall
+
+ 
+  it 'double toss params', (done)->
+    g = ficent [
+      (_toss)->
+        debug 'double toss', 'g'
+        _toss.g = 12
+        _toss null, 19
+    ]
+    f = ficent [
+      (_toss)->
+        debug 'double toss', 'f.a'
+        _toss.a = 11
+        _toss null
+      (_toss)->
+        debug 'double toss', 'f g()'
+        g _toss
+      (_toss)->
+        debug 'double toss', 'ag', '_toss.params',_toss.params
+        _toss.ag = _toss.a * _toss.params[0]
+        _toss null
+      ]
+
+    outCall = (err)->
+      debug 'double toss', 'outCall'
+      expect err
+        .toBe null
+      expect outCall.ag 
+        .toEqual 11 * 19
       done()
     f outCall
 # describe 'ficent.join', ()->
