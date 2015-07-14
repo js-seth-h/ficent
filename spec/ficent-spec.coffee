@@ -1,4 +1,4 @@
-process.env.DEBUG = "test, ficent"
+process.env.DEBUG = "test"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -197,7 +197,7 @@ describe 'flow', ()->
       done()
 
  
- 
+
 describe 'fork', ()->    
   it 'basic', (done)->
     forkingFns = []

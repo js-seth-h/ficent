@@ -41,9 +41,7 @@ _isObject = (obj)->
 
 _defaultCallbackFn = (err)->
   if err
-    throw err 
-
-
+    throw err  
  
 toss =
   assign : (fn, srcFn...)->
@@ -62,19 +60,7 @@ toss =
           nextFn errMayBe, args...
         catch err
           callback err
- 
- 
-# runFork = (forkingFns, args, outCallback)-> 
-#   join = createJoin()
-#   forkingFns.forEach (flow)->
-#     cbIn = join.in()
-#     toss.assign cbIn, outCallback
-
-#     flow args..., cbIn
-
-#   join.out outCallback 
-
-
+  
 createMuxFn = (fns)->  
   forkingFns = fns.map (flow)->  
     return createSeqFn flow if _isArray flow
@@ -151,47 +137,12 @@ createSeqFn = (flowFns)->
     if done and typeof done isnt 'function'
       args.push done
     else 
-      outCallback = done
-      # outCallback = undefined
-    # unless outCallback
-      # outCallback = _defaultCallbackFn
-
-    # debug '_fn.flow arity = ', args.length
-    # debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
-    # runFlow flowFns, err, args, outCallback
+      outCallback = done 
     contextArgs = args
     _toss startErr, args... 
 
   return startFn
-
-# runFlow = (flowFns, startErr, args, outCallback)->
-#   fnInx = 0
-#   _toss = (err, tossArgs...)->
-#     _toss.params = tossArgs
-
-#     if flowFns.length is fnInx
-#       toss.assign outCallback, _toss
-#       return outCallback err, args...
-
-#     fn = flowFns[fnInx]
-#     fnInx++
  
-#     if _isArray fn 
-#       fn = createMuxFn fn 
-
-#     isErrorHandlable = (fn.length is args.length + 2) # include err, callback
-#     if err and not isErrorHandlable
-#       return _toss err
-
-#     try
-#       if isErrorHandlable
-#         fn err, args..., _toss
-#       else
-#         fn args..., _toss
-#     catch newErr
-#       _toss newErr
-#   toss.mixErr _toss 
-#   _toss startErr, args... 
  
 createJoin = (strict = true)->
   errors = []
@@ -242,48 +193,9 @@ createJoin = (strict = true)->
   return fns
   
 _fn = {}
-_fn.join = createJoin
-# _fn.fork = (forkingFns)->
-#   return (args..., outCallback)->      
-#     if typeof outCallback isnt 'function'
-#       args.push outCallback
-#       outCallback = _defaultCallbackFn
-#     runFork forkingFns, args, outCallback
-
+_fn.join = createJoin 
 _fn.fork = createMuxFn
-_fn.flow = createSeqFn
-# _fn.flow = (flowFns)->
-#   _validating = (fns)->
-#     _valid = (arr)->
-#       for item in arr
-#         if _isArray item
-#           _valid item
-#         else
-#           throw new Error 'item of ficent flow must be function or array' unless _isFunction item
-
-#     _valid fns
-   
-
-#   _validating flowFns
-#   return (args..., outCallback)->  
-
-#     first = args[0]
-#     err = null
-#     # debug 'first', first
-#     if first is null or first is undefined or _isError first
-#       err = args.shift()
-#       debug 'set err = ', err
-  
-#     if outCallback and typeof outCallback isnt 'function'
-#       args.push outCallback
-#       outCallback = undefined
-#     unless outCallback
-#       outCallback = _defaultCallbackFn
-
-#     # debug '_fn.flow arity = ', args.length
-#     debug '_fn.flow ', 'err =',err, 'args=', args, 'outCallback=', outCallback , '<--', arguments
-#     runFlow flowFns, err, args, outCallback
-
+_fn.flow = createSeqFn 
 
 #############################################
 # 유틸리티 고계도 함수
