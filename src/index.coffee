@@ -45,13 +45,16 @@ _defaultCallbackFn = (err)->
  
 toss =
   assign : (fn, srcFn...)->
+    return unless fn
     for t in srcFn
       for own prop, val of t
         continue if prop is 'err'
         fn[prop] = val
         debug 'assign', prop, '=', val
+    return
 
   mixErr: (callback)->
+    return unless callback
     callback.err = (nextFn)->
       return (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
@@ -136,10 +139,11 @@ createSeqFn = (flowFns)->
       startErr = args.shift()
       debug 'createSeqFn', 'set startErr = ', startErr
   
-    if done and typeof done isnt 'function'
-      args.push done
-    else 
-      outCallback = done 
+    if done 
+      if typeof done isnt 'function'
+        args.push done
+      else
+        outCallback = done 
     contextArgs = args
     _toss startErr, args... 
 

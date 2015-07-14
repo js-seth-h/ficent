@@ -34,6 +34,13 @@ describe 'flow', ()->
         done()
     ]
     fx ctx
+  it 'run flow with do ', (done)->  
+    do ficent [  
+      (next)->
+        debug  'arguments', arguments 
+        next()
+        done()
+    ]
   
   it 'run function created by flow.fn', (done)-> 
 
