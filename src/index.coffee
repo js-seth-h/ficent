@@ -95,12 +95,27 @@ createSeqFn = (flowFns)->
           throw new Error 'item of ficent flow must be function or array' unless _isFunction item
     _valid fns 
 
+  _startArg = (args..., done)-> 
+    debug 'createSeqFn', '_startArg'
+    first = args[0]
+    startErr = null 
+    if first is null or first is undefined or _isError first
+      startErr = args.shift()
+      debug 'createSeqFn', 'set startErr = ', startErr
 
-  startFn = (args..., done)->   
+    outCallback = _defaultCallbackFn
+    if done 
+      if typeof done isnt 'function'
+        args.push done
+      else
+        outCallback = done  
+    return [ startErr, args, outCallback]
 
+  startFn = (args...)->   
     fnInx = 0
     contextArgs = null
-    outCallback = _defaultCallbackFn
+    outCallback = null
+
     _toss = (err, tossArgs...)->
       _toss.params = tossArgs
       if flowFns.length is fnInx
@@ -132,20 +147,8 @@ createSeqFn = (flowFns)->
 
     _validating flowFns
     toss.mixErr _toss 
-    
-    debug 'createSeqFn', 'startFn'
-    first = args[0]
-    startErr = null
-    # debug 'first', first
-    if first is null or first is undefined or _isError first
-      startErr = args.shift()
-      debug 'createSeqFn', 'set startErr = ', startErr
-  
-    if done 
-      if typeof done isnt 'function'
-        args.push done
-      else
-        outCallback = done 
+    [startErr, args, outCallback] = _startArg args...
+ 
     contextArgs = args
     _toss startErr, args... 
 
@@ -193,6 +196,7 @@ createJoin = (strict = true)->
         finished[inx] = true
 
         callOut()
+      toss.mixErr _cb
       inFns.push _cb
       return _cb
     out: (fn)->
