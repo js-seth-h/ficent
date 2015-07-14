@@ -626,6 +626,35 @@ describe 'toss', ()->
         .not.toBe null
       done()
 
+  it 'double toss', (done)->
+    g = ficent [
+      (_toss)->
+        debug 'double toss', 'g'
+        _toss.g = 12
+        _toss null
+    ]
+    f = ficent [
+      (_toss)->
+        debug 'double toss', 'f.a'
+        _toss.a = 11
+        _toss null
+      (_toss)->
+        debug 'double toss', 'f g()'
+        g _toss
+      (_toss)->
+        debug 'double toss', 'ag'
+        _toss.ag = _toss.a * _toss.g
+        _toss null
+      ]
+
+    outCall = (err)->
+      debug 'double toss', 'outCall'
+      expect err
+        .toBe null
+      expect outCall.ag 
+        .toEqual 11 * 12 
+      done()
+    f outCall
 # describe 'ficent.join', ()->
 #   it 'throw in out()', (done)->
 

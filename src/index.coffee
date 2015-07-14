@@ -44,6 +44,15 @@ _defaultCallbackFn = (err)->
     throw err 
 
 
+ 
+toss =
+  assign : (fn, srcFn...)->
+    for t in srcFn
+      for own prop, val of t
+        fn[prop] = val
+        debug 'merge', prop, '=', val
+    
+
 tossableFunction = (callback)->
   callback.err = (fn)->
     return (errMayBe, args...)->
@@ -91,6 +100,7 @@ runFlow = (flowFns, startErr, args, outCallback)->
     _toss.params = tossArgs
 
     if flowFns.length is fnInx
+      toss.assign outCallback, _toss
       return outCallback err, args...
 
     fn = flowFns[fnInx]
@@ -184,19 +194,13 @@ _fn.join = (strict = true)->
   finished = [] 
   inFns = []
   outFn = undefined
-  resultsObj = {}
+  # resultsObj = {}
   callOut = ()->   
     allFnished = finished.every (v)-> v
     if allFnished and outFn
       err = unifyErrors errors
-      results.obj = resultsObj
-
-      # debug '===================================================='
-      for fn in inFns
-        for own prop, value of fn
-          debug 'outFn << ', prop, ':', value
-          outFn[prop] = value
-
+      # results.obj = resultsObj
+      toss.assign outFn, inFns...
       outFn err, results
 
   fns = 
@@ -207,17 +211,18 @@ _fn.join = (strict = true)->
       results.push undefined
       finished.push false
 
-      if varName
-        resultsObj[varName] = resultsObj[varName]  ||  [] 
-        varInx = results.length
-        resultsObj[varName].push undefined
+      # if varName
+        # resultsObj[varName] = resultsObj[varName]  ||  [] 
+        # varInx = results.length
+        # resultsObj[varName].push undefined
+
       _cb = (err, values...)->
         throw new Error 'should call `callback` once' if finished[inx] and strict
         errors[inx] = err
         values = values[0] if values.length is 1
         results[inx] = values
         if varName
-          resultsObj[varName][inx] = values
+          results[varName] = values
         finished[inx] = true
 
         # for own prop, value of _cb
