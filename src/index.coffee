@@ -95,42 +95,44 @@ createSeqFn = (flowFns)->
           throw new Error 'item of ficent flow must be function or array' unless _isFunction item
     _valid fns 
 
-  fnInx = 0
-  contextArgs = null
-  outCallback = _defaultCallbackFn
-  _toss = (err, tossArgs...)->
-    _toss.params = tossArgs
-    if flowFns.length is fnInx
-      toss.assign outCallback, _toss
-       
-      return outCallback err, tossArgs... #  contextArgs...
-
-    fn = flowFns[fnInx]
-    debug 'createSeqFn', 'toss', fnInx
-    fnInx++ 
-
-    if _isArray fn 
-      fn = createMuxFn fn 
-
-    unless _isFunction fn
-      outCallback new Error 'ficent only accept Function or Array'
-      return
-    isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
-    if err and not isErrorHandlable
-      return _toss err
-
-    try
-      if isErrorHandlable
-        fn err, contextArgs..., _toss
-      else
-        fn contextArgs..., _toss
-    catch newErr
-      _toss newErr
-
-  _validating flowFns
-  toss.mixErr _toss 
 
   startFn = (args..., done)->   
+
+    fnInx = 0
+    contextArgs = null
+    outCallback = _defaultCallbackFn
+    _toss = (err, tossArgs...)->
+      _toss.params = tossArgs
+      if flowFns.length is fnInx
+        toss.assign outCallback, _toss
+         
+        return outCallback err, tossArgs... #  contextArgs...
+
+      fn = flowFns[fnInx]
+      debug 'createSeqFn', 'toss', fnInx
+      fnInx++ 
+
+      if _isArray fn 
+        fn = createMuxFn fn 
+
+      unless _isFunction fn
+        outCallback new Error 'ficent only accept Function or Array'
+        return
+      isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
+      if err and not isErrorHandlable
+        return _toss err
+
+      try
+        if isErrorHandlable
+          fn err, contextArgs..., _toss
+        else
+          fn contextArgs..., _toss
+      catch newErr
+        _toss newErr
+
+    _validating flowFns
+    toss.mixErr _toss 
+    
     debug 'createSeqFn', 'startFn'
     first = args[0]
     startErr = null
