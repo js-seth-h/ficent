@@ -50,7 +50,7 @@ toss =
       for own prop, val of t
         continue if prop is 'err'
         fn[prop] = val
-        debug 'assign', prop, '=', val
+        # debug 'assign', prop, '=', val
     return
 
   mixErr: (callback)->
@@ -96,12 +96,12 @@ createSeqFn = (flowFns)->
     _valid fns 
 
   _startArg = (args..., done)-> 
-    debug 'createSeqFn', '_startArg'
+    # debug 'createSeqFn', '_startArg'
     first = args[0]
     startErr = null 
     if first is null or first is undefined or _isError first
       startErr = args.shift()
-      debug 'createSeqFn', 'set startErr = ', startErr
+      # debug 'createSeqFn', 'set startErr = ', startErr
 
     outCallback = _defaultCallbackFn
     if done 
@@ -124,7 +124,7 @@ createSeqFn = (flowFns)->
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
-      debug 'createSeqFn', 'toss', fnInx
+      # debug 'createSeqFn', 'toss', fnInx
       fnInx++ 
 
       if _isArray fn 
