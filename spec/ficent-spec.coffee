@@ -34,6 +34,19 @@ describe 'flow', ()->
         done()
     ]
     fx ctx
+  it 'run flow with single function ', (done)-> 
+    ctx = 
+      name : 'context base'
+    
+    fx = ficent (err, ctx, next)->
+      debug  'arguments', arguments
+      throw new Error 'Fake'
+    fx ctx, (err)->
+      expect err
+        .not.toEqual null
+      done()    
+
+
   it 'run flow with do ', (done)->  
     do ficent [  
       (next)->

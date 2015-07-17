@@ -86,6 +86,9 @@ createMuxFn = (fns)->
   return newFn
 
 createSeqFn = (flowFns)->
+  if not _isArray flowFns
+    flowFns = [flowFns]
+
   _validating = (fns)->
     _valid = (arr)->
       for item in arr
