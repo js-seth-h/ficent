@@ -65,7 +65,13 @@ toss =
         catch err
           callback err
   
-createMuxFn = (fns)->  
+createMuxFn = (muxArgs...)->
+  hint = undefined
+  if muxArgs.length is 1
+    [fns] = muxArgs
+  else 
+    [hint, fns] = muxArgs
+
   forkingFns = fns.map (flow)->  
     return createSeqFn flow if _isArray flow
     return flow
@@ -81,11 +87,26 @@ createMuxFn = (fns)->
       cbIn = join.in()
       toss.assign cbIn, outCallback
       flow args..., cbIn
-    join.out outCallback 
 
+    _insideCb = (err, args...)->
+      if err
+        err.hint = err.hint or hint
+      toss.assign outCallback, _insideCb
+      outCallback err, args...
+
+    join.out _insideCb
+
+  newFn.hint = hint
   return newFn
 
-createSeqFn = (flowFns)->
+createSeqFn = (args...)->
+  hint = undefined
+  if args.length is 1
+    [flowFns] = args
+  else 
+    [hint, flowFns] = args
+
+
   if not _isArray flowFns
     flowFns = [flowFns]
 
@@ -121,6 +142,8 @@ createSeqFn = (flowFns)->
 
     _toss = (err, tossArgs...)->
       _toss.params = tossArgs
+      if err
+        err.hint = err.hint or hint 
       if flowFns.length is fnInx
         toss.assign outCallback, _toss
          
@@ -154,7 +177,7 @@ createSeqFn = (flowFns)->
  
     contextArgs = args
     _toss startErr, args... 
-
+  startFn.hint = hint
   return startFn
  
  
@@ -221,29 +244,14 @@ _fn.wrap = (preFns,postFns)->
   return (inFns)->
     inFns = [inFns] unless _isArray inFns
     return _fn.flow [preFns..., inFns..., postFns...]
+ 
 
-_fn.err = (fn)->
-  return (args..., callback)->
-    toss.mixErr callback
-    try
-      fn args..., callback
-    catch e
-      callback e
-
-# _fn.catch 
-###
-구현할까 생각해봤는데 의미가 없다.  
-_fn.catch를 사용하면, 에러가 나던 말던 신경 안쓰는 루틴이기도 한데다가 
-callback이 없으니 구조적으로 깊이 파고들 이유가 없다는 것이다. 
-그냥 try catch 해도 된다. 
-###
-
-ficent = (args..., flowFns)->
-  _fn.flow flowFns
+ficent = (args...)->
+  _fn.flow args...
  
 ficent.fn = _fn.flow 
 ficent.flow = _fn.flow 
-ficent.err = _fn.err
+# ficent.err = _fn.err # 필요없다.  ficent  자체를 사용하면됨.
 
 
 # 같은 입력 요소에 대한 병렬 실행

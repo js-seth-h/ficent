@@ -449,7 +449,7 @@ describe 'toss', ()->
   f = (callback)-> callback null, 5
   e = (callback)-> callback new Error 'in E'
   it 'no err ', (done)-> 
-    a = ficent.err (callback)->
+    a = ficent (callback)->
       debug 1
       f callback.err (err, val)-> 
         debug 2
@@ -462,7 +462,7 @@ describe 'toss', ()->
       done()
 
   it 'catch ', (done)-> 
-    a = ficent.err (callback)->
+    a = ficent (callback)->
       throw new Error 'TEST'
       f callback.err (err, val)-> 
         callback null
@@ -475,7 +475,7 @@ describe 'toss', ()->
 
 
   it 'catch inside ', (done)-> 
-    a = ficent.err (callback)->
+    a = ficent (callback)->
       f callback.err (err, val)-> 
         throw new Error 'TEST'
         callback null
@@ -488,7 +488,7 @@ describe 'toss', ()->
 
 
   it 'toss before callbacked', (done)-> 
-    a = ficent.err (callback)->
+    a = ficent (callback)->
       e callback.err (err, val)-> 
         throw new Error 'TEST2'
         callback null
@@ -564,3 +564,91 @@ describe 'toss', ()->
 #     join = ficent.join()
 #     join.out ()->
 #       
+
+
+describe 'hint', ()->
+
+  it 'hint', (done)-> 
+    a = ficent { name: 'function a()'}, (callback)->
+      callback null
+    a (err)->
+      debug 'hint callback', arguments
+      expect err 
+        .toBe null
+      expect a.hint.name 
+        .toEqual 'function a()'
+      done() 
+      
+  it 'hint fork', (done)-> 
+    ctx = 
+      cnt : 0
+
+    forkingFns = [0...5].map (cnt)->
+      return (next)->  
+        ctx.cnt++
+        next null
+    f = ficent.fork 
+      name: 'function f()'
+    , forkingFns
+    f (err)->
+      assert not util.isError err, 'error'
+      assert ctx.cnt is 5 , 'fork count 5 ' 
+      expect f.hint.name 
+        .toEqual 'function f()'
+      done()
+
+  it 'hint on error  ', (done)-> 
+    a = ficent { name: 'function a()'}, (callback)->
+      throw new Error 'TEST'
+      f callback.err (err, val)-> 
+        callback null
+    a (err)->
+
+      debug 'catch ', err.toString(), err.hint
+      expect err 
+        .not.toBe null
+      expect err.hint.name 
+        .toEqual 'function a()'
+      done()
+
+
+  it 'hint on error when wrap ficent ', (done)-> 
+    
+    b = ficent 
+      name: 'function b()'
+    , (callback)->
+      do ficent { name: 'function a()'}, (callback)->
+        throw new Error 'TEST'
+        f callback.err (err, val)-> 
+          callback null
+
+    b (err)->
+      debug 'catch ', err.toString(), err.hint
+      expect err 
+        .not.toBe null
+      expect err.hint.name 
+        .toEqual 'function a()'
+      done()
+
+
+
+
+
+  it 'hint on error with fork', (done)->
+    ctx = 
+      cnt : 0
+
+    forkingFns = [0...5].map (cnt)->
+      return (next)->  
+        ctx.cnt++
+        next new Error 'Fake'
+    f = ficent.fork 
+      name: 'function f()'
+    , forkingFns
+    f (err)->
+      assert util.isError err, 'error'
+      assert ctx.cnt is 5 , 'fork count 5 ' 
+      expect err.hint.name 
+        .toEqual 'function f()'
+      done()
+
