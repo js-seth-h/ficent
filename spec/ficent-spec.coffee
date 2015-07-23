@@ -354,12 +354,12 @@ describe 'toss', ()->
 
 
   it 'toss data ', (done)-> 
-
+    debug '-----------------------------------------', 'toss data' 
     ctx = {}
     ctx1 = {}
     ctx2 = {}
     
-    f = ficent.fn [ 
+    f = ficent [ 
       (ctx, c1,c2, toss)-> 
         toss.tossValue = 9
         toss()
@@ -376,11 +376,10 @@ describe 'toss', ()->
       assert ctx.tossed is true, 'must be tossed'
 
       done()
-
-
+ 
   it 'toss data in fork ', (done)-> 
-
-    output = {}
+    debug '---------------------', 'toss data in fork'
+    # output = {}
     f = ficent.fn [ 
       [
         (toss)-> 
@@ -397,19 +396,37 @@ describe 'toss', ()->
       [
         (toss)-> 
           toss.c2 = toss.c * 2
+          debug 'mk c2'
           toss()
         (toss)->   
           toss.c3 = toss.c * 3
+          debug 'mk c3'
           toss()
       ] 
+      (toss)->
+        toss null, toss
     ] 
-    f (err)->
-      debug 'toss data in fork', err
-      expect err 
-        .toBe undefined
-      assert output.c is 63, '= 7 * 9 '
-      assert output.c2 is 126, 'c * 2'
-      assert output.c3 is 189, 'c * 3 '
+    f (err, output)->
+      try
+        debug '========================'
+        debug 'toss data in fork', err
+        for own k, v of arguments.callee
+          debug 'kv', k, v
+        expect err 
+          .toBe null
+
+        expect output.c
+          .toEqual 63
+        # assert output.c is 63, '= 7 * 9 '
+        expect output.c2
+          .toEqual 126
+        expect output.c3
+          .toEqual 189
+        # assert output.c2 is 126, 'c * 2'
+        # assert output.c3 is 189, 'c * 3 '
+      catch e 
+        console.log e
+
       done()
 
   it 'toss err 1 ', (done)-> 
@@ -563,8 +580,7 @@ describe 'toss', ()->
 
 #     join = ficent.join()
 #     join.out ()->
-#       
-
+#        
 
 describe 'hint', ()->
 
@@ -650,5 +666,24 @@ describe 'hint', ()->
       assert ctx.cnt is 5 , 'fork count 5 ' 
       expect err.hint.name 
         .toEqual 'function f()'
+      done()
+
+
+
+describe 'double callback defence', ()->    
+  it 'err when double callback ', (done)->  
+    fx = ficent [
+      (next)->
+        next null
+        next null
+      (next)->
+        setTimeout next, 1000
+      (next)->
+        setTimeout next, 1000
+    ]
+    fx (err)->
+      debug 'err ', err
+      expect err
+        .not.toEqual null
       done()
 

@@ -50,7 +50,7 @@ toss =
       for own prop, val of t
         continue if prop is 'err'
         fn[prop] = val
-        # debug 'assign', prop, '=', val
+        debug 'assign', prop, '=', val
     return
 
   mixErr: (callback)->
@@ -139,12 +139,40 @@ createSeqFn = (args...)->
     fnInx = 0
     contextArgs = null
     outCallback = null
+    brokenErr = null
+
+
+    _createTmpCB = (finx)->
+      called = false
+      cb_callcheck = (err, args...)->
+        debug 'cb_callcheck',finx,  err, args
+        if called is true
+          brokenErr = new Error 'toss is called twice.'
+          brokenErr.hint = startFn.hint
+          fnInx = finx
+          _toss brokenErr
+          return 
+          # return 
+        called = true
+
+        debug ' - assign to _toss from ' + finx
+        toss.assign _toss, cb_callcheck 
+        _toss err, args... 
+
+      debug ' - assign to tmpCB ' + finx
+      toss.assign cb_callcheck, _toss 
+      toss.mixErr cb_callcheck
+      return cb_callcheck
 
     _toss = (err, tossArgs...)->
+      if brokenErr
+        return if err isnt brokenErr
+
       _toss.params = tossArgs
       if err
         err.hint = err.hint or hint 
       if flowFns.length is fnInx
+        debug ' - assign to outCallback'
         toss.assign outCallback, _toss
          
         return outCallback err, tossArgs... #  contextArgs...
@@ -164,10 +192,11 @@ createSeqFn = (args...)->
         return _toss err
 
       try
+        cb = _createTmpCB (fnInx - 1)
         if isErrorHandlable
-          fn err, contextArgs..., _toss
+          fn err, contextArgs..., cb
         else
-          fn contextArgs..., _toss
+          fn contextArgs..., cb
       catch newErr
         _toss newErr
 
