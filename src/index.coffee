@@ -47,14 +47,19 @@ toss =
   assign : (fn, srcFn...)->
     return unless fn
     for t in srcFn
+      debug ' < ', toss.toss_props t
       for own prop, val of t
         continue if prop is 'err'
+        continue if prop is 'toss_props'
         fn[prop] = val
-        debug 'assign', prop, '=', val
+        # debug 'assign', prop, '=', val
     return
 
   mixErr: (callback)->
     return unless callback
+    callback.toss_props = ()->
+      toss.toss_props callback
+
     callback.err = (nextFn)->
       return (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
@@ -64,7 +69,17 @@ toss =
           nextFn errMayBe, args...
         catch err
           callback err
-  
+  toss_props: (fn)-> 
+    l = {}
+    for own prop, val of fn
+      continue if prop is 'err'
+      continue if prop is 'toss_props'
+      l[prop] = val
+    # return require('util').inspect(l)
+    return JSON.stringify l, null, 2 
+  # print: (fn)->
+  #   debug 'toss.print', toss.toss_props fn
+
 createMuxFn = (muxArgs...)->
   hint = undefined
   if muxArgs.length is 1
@@ -72,12 +87,16 @@ createMuxFn = (muxArgs...)->
   else 
     [hint, fns] = muxArgs
 
-  forkingFns = fns.map (flow)->  
-    return createSeqFn flow if _isArray flow
-    return flow
+  forkingFns = fns.map (flow, inx)->  
+    # _hint = 
+      # at:  'ficent nested fork ' + inx
+    return createSeqFn flow
+    # return flow
 
   newFn = (args..., outCallback)-> 
     # runFork fnArr, args, next 
+    debug 'createMuxFn, newFn ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+    debug 'toss.print', toss.toss_props outCallback
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = _defaultCallbackFn
@@ -89,6 +108,7 @@ createMuxFn = (muxArgs...)->
       flow args..., cbIn
 
     _insideCb = (err, args...)->
+      debug 'fork _insideCb', err, args
       if err
         err.hint = err.hint or hint
       toss.assign outCallback, _insideCb
@@ -135,12 +155,18 @@ createSeqFn = (args...)->
         outCallback = done  
     return [ startErr, args, outCallback]
 
+  _validating flowFns
   startFn = (args...)->   
     fnInx = 0
     contextArgs = null
     outCallback = null
     brokenErr = null
 
+    [startErr, args, outCallback] = _startArg args... 
+    debug 'createSeqFn, startFn *********************************************'
+    debug 'toss.print', toss.toss_props  outCallback
+
+    contextArgs = args
 
     _createTmpCB = (finx)->
       called = false
@@ -154,11 +180,11 @@ createSeqFn = (args...)->
           # return 
         called = true
 
-        debug ' - assign to _toss from ' + finx
+        debug  '_toss', '<', 'tmpCB ', finx
         toss.assign _toss, cb_callcheck 
         _toss err, args... 
 
-      debug ' - assign to tmpCB ' + finx
+      debug 'tmpCB ', finx, '<', '_toss'
       toss.assign cb_callcheck, _toss 
       toss.mixErr cb_callcheck
       return cb_callcheck
@@ -171,7 +197,8 @@ createSeqFn = (args...)->
       if err
         err.hint = err.hint or hint 
       if flowFns.length is fnInx
-        debug ' - assign to outCallback'
+        # debug ' - assign to outCallback'
+        debug 'outCallback',  '<', '_toss'
         toss.assign outCallback, _toss
          
         return outCallback err, tossArgs... #  contextArgs...
@@ -181,7 +208,7 @@ createSeqFn = (args...)->
       fnInx++ 
 
       if _isArray fn 
-        fn = createMuxFn fn 
+        fn = createMuxFn hint, fn 
 
       unless _isFunction fn
         outCallback new Error 'ficent only accept Function or Array'
@@ -199,12 +226,9 @@ createSeqFn = (args...)->
       catch newErr
         err = err or newErr 
         _toss err
-
-    _validating flowFns
-    toss.mixErr _toss 
-    [startErr, args, outCallback] = _startArg args...
- 
-    contextArgs = args
+    toss.mixErr _toss  
+    debug '_toss',  '<', 'outCallback'
+    toss.assign _toss, outCallback
     _toss startErr, args... 
   startFn.hint = hint
   return startFn

@@ -392,15 +392,21 @@ describe 'toss', ()->
       (toss)->
         toss.c = toss.a * toss.b
         output = toss
+        debug 'when FN 3 ', toss.toss_props()
         toss null
       [
         (toss)-> 
+          debug 'FN4-1 = ', toss.toss_props() 
           toss.c2 = toss.c * 2
-          debug 'mk c2'
+          debug 'mk c2', toss.c
           toss()
         (toss)->   
+          debug 'FN4-1 = ', toss.toss_props()
           toss.c3 = toss.c * 3
-          debug 'mk c3'
+          debug 'mk c3', toss.c
+          # l = ''
+          # l += "#{k}:#{v},"  for own k, v of toss
+
           toss()
       ] 
       (toss)->
@@ -428,7 +434,7 @@ describe 'toss', ()->
         console.log e
 
       done()
-
+ 
   it 'toss err 1 ', (done)-> 
 
     output = {}
@@ -580,7 +586,7 @@ describe 'toss', ()->
 
 #     join = ficent.join()
 #     join.out ()->
-#        
+#         
 
 describe 'hint', ()->
 
@@ -687,3 +693,35 @@ describe 'double callback defence', ()->
         .not.toEqual null
       done()
 
+
+
+describe 'ficent complex', ()->    
+
+  it ' seq - mux - seq ', (done)-> 
+      
+    debug '========================================================'
+    debug ' ficent complex'
+    f = ficent [
+      (param, _toss)->
+
+        debug 'F1', arguments
+        _toss null, 1
+      [
+        (param, _toss)->
+
+          debug 'F2', arguments
+          _toss null, 2
+        (param, _toss)->
+          debug 'F3', arguments
+          _toss null, 3
+      ]
+      (err, param, _toss)->
+        debug 'F4', arguments
+        _toss null, 4
+    ]
+
+
+    f {}, (err, param, _toss)->
+      expect err
+        .toEqual null
+      done()
