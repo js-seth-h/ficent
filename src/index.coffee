@@ -197,7 +197,8 @@ createSeqFn = (args...)->
         else
           fn contextArgs..., cb
       catch newErr
-        _toss newErr
+        err = err or newErr 
+        _toss err
 
     _validating flowFns
     toss.mixErr _toss 
