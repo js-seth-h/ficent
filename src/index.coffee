@@ -75,8 +75,9 @@ toss =
       continue if prop is 'err'
       continue if prop is 'toss_props'
       l[prop] = val
+    return l
     # return require('util').inspect(l)
-    return JSON.stringify l, null, 2 
+    # return JSON.stringify l, null, 2 
   # print: (fn)->
   #   debug 'toss.print', toss.toss_props fn
 
