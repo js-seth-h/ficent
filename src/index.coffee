@@ -47,7 +47,7 @@ toss =
   assign : (fn, srcFn...)->
     return unless fn
     for t in srcFn
-      debug ' < ', toss.toss_props t
+      # debug ' < ', toss.toss_props t
       for own prop, val of t
         continue if prop is 'err'
         continue if prop is 'toss_props'
@@ -97,7 +97,7 @@ createMuxFn = (muxArgs...)->
   newFn = (args..., outCallback)-> 
     # runFork fnArr, args, next 
     debug 'createMuxFn, newFn ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-    debug 'toss.print', toss.toss_props outCallback
+    # debug 'toss.print', toss.toss_props outCallback
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = _defaultCallbackFn
@@ -109,15 +109,19 @@ createMuxFn = (muxArgs...)->
       flow args..., cbIn
 
     _insideCb = (err, args...)->
-      debug 'fork _insideCb', err, args
+      # debug 'fork _insideCb', err, args
       if err
         err.hint = err.hint or hint
+        err.ficentFn = err.ficentFn or newFn
       toss.assign outCallback, _insideCb
       outCallback err, args...
 
     join.out _insideCb
 
-  newFn.hint = hint
+  # newFn.hint = hint
+  for own k, v of hint
+    debug 'set hint kv', k, v
+    newFn[k] = v 
   return newFn
 
 createSeqFn = (args...)->
@@ -165,7 +169,7 @@ createSeqFn = (args...)->
 
     [startErr, args, outCallback] = _startArg args... 
     debug 'createSeqFn, startFn *********************************************'
-    debug 'toss.print', toss.toss_props  outCallback
+    # debug 'toss.print', toss.toss_props  outCallback
 
     contextArgs = args
 
@@ -181,11 +185,11 @@ createSeqFn = (args...)->
           # return 
         called = true
 
-        debug  '_toss', '<', 'tmpCB ', finx
+        # debug  '_toss', '<', 'tmpCB ', finx
         toss.assign _toss, cb_callcheck 
         _toss err, args... 
 
-      debug 'tmpCB ', finx, '<', '_toss'
+      # debug 'tmpCB ', finx, '<', '_toss'
       toss.assign cb_callcheck, _toss 
       toss.mixErr cb_callcheck
       return cb_callcheck
@@ -196,10 +200,11 @@ createSeqFn = (args...)->
 
       _toss.params = tossArgs
       if err
-        err.hint = err.hint or hint 
+        err.hint = err.hint or hint
+        err.ficentFn = err.ficentFn or startFn 
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
-        debug 'outCallback',  '<', '_toss'
+        # debug 'outCallback',  '<', '_toss'
         toss.assign outCallback, _toss
          
         return outCallback err, tossArgs... #  contextArgs...
@@ -231,7 +236,13 @@ createSeqFn = (args...)->
     debug '_toss',  '<', 'outCallback'
     toss.assign _toss, outCallback
     _toss startErr, args... 
-  startFn.hint = hint
+  # startFn.hint = hint
+
+  debug 'hint ===', hint
+  for own k, v of hint
+    debug 'set Hint kv', k, v
+    # startFn[k] = v 
+    Object.defineProperty startFn, k, {value: v } 
   return startFn
  
  

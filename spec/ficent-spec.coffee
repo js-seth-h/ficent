@@ -591,16 +591,16 @@ describe 'toss', ()->
 describe 'hint', ()->
 
   it 'hint', (done)-> 
-    a = ficent { name: 'function a()'}, (callback)->
+    a = ficent { nick: 'function a()'}, (callback)->
       callback null
     a (err)->
       debug 'hint callback', arguments
       expect err 
         .toBe null
-      expect a.hint.name 
+      expect a.nick 
         .toEqual 'function a()'
       done() 
-      
+  
   it 'hint fork', (done)-> 
     ctx = 
       cnt : 0
@@ -610,17 +610,17 @@ describe 'hint', ()->
         ctx.cnt++
         next null
     f = ficent.fork 
-      name: 'function f()'
+      nick: 'function f()'
     , forkingFns
     f (err)->
       assert not util.isError err, 'error'
       assert ctx.cnt is 5 , 'fork count 5 ' 
-      expect f.hint.name 
+      expect f.nick 
         .toEqual 'function f()'
       done()
 
   it 'hint on error  ', (done)-> 
-    a = ficent { name: 'function a()'}, (callback)->
+    a = ficent { nick: 'function a()'}, (callback)->
       throw new Error 'TEST'
       f callback.err (err, val)-> 
         callback null
@@ -629,17 +629,20 @@ describe 'hint', ()->
       debug 'catch ', err.toString(), err.hint
       expect err 
         .not.toBe null
-      expect err.hint.name 
+      expect err.hint.nick 
         .toEqual 'function a()'
+      expect err.ficentFn.nick 
+        .toEqual 'function a()'
+
       done()
 
 
   it 'hint on error when wrap ficent ', (done)-> 
     
     b = ficent 
-      name: 'function b()'
+      nick: 'function b()'
     , (callback)->
-      do ficent { name: 'function a()'}, (callback)->
+      do ficent { nick: 'function a()'}, (callback)->
         throw new Error 'TEST'
         f callback.err (err, val)-> 
           callback null
@@ -648,7 +651,9 @@ describe 'hint', ()->
       debug 'catch ', err.toString(), err.hint
       expect err 
         .not.toBe null
-      expect err.hint.name 
+      expect err.ficentFn.nick 
+        .toEqual 'function a()'
+      expect err.hint.nick 
         .toEqual 'function a()'
       done()
 
@@ -665,12 +670,12 @@ describe 'hint', ()->
         ctx.cnt++
         next new Error 'Fake'
     f = ficent.fork 
-      name: 'function f()'
+      nick: 'function f()'
     , forkingFns
     f (err)->
       assert util.isError err, 'error'
       assert ctx.cnt is 5 , 'fork count 5 ' 
-      expect err.hint.name 
+      expect err.hint.nick 
         .toEqual 'function f()'
       done()
 
