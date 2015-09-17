@@ -294,43 +294,60 @@ createJoin = (strict = true)->
       outFn = fn
       callOut()
   return fns
-  
-_fn = {}
-_fn.join = createJoin 
-_fn.fork = createMuxFn
-_fn.flow = createSeqFn 
-
-#############################################
-# 유틸리티 고계도 함수
-
-_fn.wrap = (preFns,postFns)->
-  preFns = [preFns] unless _isArray preFns
-  postFns = [postFns] unless _isArray postFns
-  return (inFns)->
-    inFns = [inFns] unless _isArray inFns
-    return _fn.flow [preFns..., inFns..., postFns...]
- 
-
+   
 ficent = (args...)->
-  _fn.flow args...
- 
-ficent.fn = _fn.flow 
-ficent.flow = _fn.flow 
-# ficent.err = _fn.err # 필요없다.  ficent  자체를 사용하면됨.
-
-
-# 같은 입력 요소에 대한 병렬 실행
-ficent.fork = _fn.fork
-
+  ficent.flow args...
 
 #############################################
 # 유틸리티 고계도 함수 
 # 앞뒤로 감싸기.
-ficent.wrap = _fn.wrap 
+ficent.wrap = (preFns,postFns)->
+  preFns = [preFns] unless _isArray preFns
+  postFns = [postFns] unless _isArray postFns
+  return (inFns)->
+    inFns = [inFns] unless _isArray inFns
+    return ficent.flow [preFns..., inFns..., postFns...]
+ 
 
 #############################################
 # fork-join 패턴 구현체
-ficent.join = _fn.join
+ficent.join = createJoin
+ficent.flow = createSeqFn # 함수 직렬 수행
+ficent.fork = createMuxFn # 함수 병렬 수행
+
+ficent.ser =
+ficent.series = (flows)->
+  taskFn = ficent flows
+  return (input_array, callback)->
+    fns = input_array.map (args)->
+      unless _isArray args
+        args = [args]
+      # debug 'mk Closure Fn with ', args
+      return (next)->
+        # debug 'inside par', args
+        taskFn args..., next
+
+    f = ficent.flow fns
+    f callback
+ 
+ficent.par = 
+ficent.parallel = (flows)->
+  taskFn = ficent flows
+  return (input_array, callback)->
+    fns = input_array.map (args)->
+      unless _isArray args
+        args = [args]
+      # debug 'mk Closure Fn with ', args
+      return (next)->
+        # debug 'inside par', args
+        taskFn args..., next
+    f = ficent.fork fns 
+    f callback
+
+# ficent.do = (inputs..., flows, callback)->
+#   f = ficent.flow flows
+#   f inputs..., callback
+
 
 
 module.exports = exports = ficent

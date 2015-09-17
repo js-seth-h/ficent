@@ -14,6 +14,81 @@ func2 = (ctx, next)->
   next()
 
 
+describe 'ficent seq, par', (done)->    
+  # it 'flow ', (done)->  
+  #   callback = (err)-> 
+  #     expect err
+  #       .toEqual null
+  #     # assert not util.isError err, 'no error'
+  #     expect ctx.a 
+  #       .toBeTruthy()
+  #     expect ctx.b
+  #       .toBeTruthy()
+  #     done() 
+  #   ctx = 
+  #     name : 'context base'
+    
+
+  #   ficent.do ctx, [
+  #       func1, 
+  #       func2
+  #     ], callback
+
+  # it 'fork', (done)->
+  #   forkingFns = []
+  #   ctx = 
+  #     cnt : 0
+  #   for i  in [0...5]
+  #     forkingFns.push (next)->  
+  #       ctx.cnt++
+  #       next()
+  #   # f = ficent.fork forkingFns
+  #   callback = (err)->
+  #     assert ctx.cnt is 5 , 'fork count 5 ' 
+  #     done()
+
+  #   ficent.do [forkingFns], callback
+
+  it 'par', (done)->
+    # forkingFns = []
+    # ctx = 
+      # cnt : 0
+    # for i  in [0...5]
+      # forkingFns.push (next)->  
+        # ctx.cnt++
+        # next()
+    # f = ficent.fork forkingFns
+
+    input = [3, 6, 9]
+    taskFn = ficent.par (num, next)->
+      debug 'par in', num 
+      next null, num * 1.5 
+    taskFn input, (err)->
+      debug 'par, callback', arguments
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      done()
+ 
+# return 
+describe 'err?', ()->    
+  it 'crypt ', (done)-> 
+      
+
+    md5 = (v)-> require("crypto").createHash("md5").update(v).digest("hex")
+
+    do ficent [
+      (_toss)->
+        fs.lstat 'package.json', _toss.err (err)->
+          _toss null
+      (_toss)->
+        crypto = require 'crypto'
+        salt = md5 crypto.randomBytes(40).readUInt32LE(0)
+        _toss null
+      (err,_toss)->
+
+        debug 'err = ',err
+        done()
+    ]
+
 describe 'flow', ()->    
   it 'run flow with context arguments ', (done)-> 
     ctx = 
@@ -55,13 +130,13 @@ describe 'flow', ()->
         done()
     ]
   
-  it 'run function created by flow.fn', (done)-> 
+  it 'run function created by flow', (done)-> 
 
     ctx = 
       name : 'context base'
     
 
-    _fn = ficent.fn [
+    _fn = ficent.flow [
       func1, 
       func2
     ]
@@ -88,7 +163,7 @@ describe 'flow', ()->
       debug 'f2'
       result = 11
       next()
-    f = ficent.fn [ f1, f2]
+    f = ficent.flow [ f1, f2]
     # f (req,res,next)
     debug 'run no arg'
     f (err)->
@@ -104,7 +179,7 @@ describe 'flow', ()->
     ctx1 = {}
     ctx2 = {}
     
-    f = ficent.fn [ 
+    f = ficent.flow [ 
       (ctx, c1,c2, next)-> 
         ctx.a = true
         next()
@@ -125,9 +200,9 @@ describe 'flow', ()->
 
     ctx = {}
     
-    g = ficent.fn [func1, func2]
+    g = ficent.flow [func1, func2]
 
-    f = ficent.fn [ g ]
+    f = ficent.flow [ g ]
 
     # f (req,res,next)
     f ctx, (err)->
@@ -150,7 +225,7 @@ describe 'flow', ()->
       assert err, 'must get Error'
       next()
 
-    f = ficent.fn [ func1, func_mk_Err, func2, func_Err]
+    f = ficent.flow [ func1, func_mk_Err, func2, func_Err]
       
     # f (req,res,next)
     f ctx, (err)->
@@ -167,7 +242,7 @@ describe 'flow', ()->
       debug 'mk Err'
       next new Error 'FAKE' 
 
-    f = ficent.fn [ func1, func_mk_Err, func2]
+    f = ficent.flow [ func1, func_mk_Err, func2]
       
     # f (req,res,next)
     f ctx, (err)->
@@ -188,7 +263,7 @@ describe 'flow', ()->
       assert err, 'must get Error'
       next()
 
-    f = ficent.fn [ func_mk_Err, func_Err]
+    f = ficent.flow [ func_mk_Err, func_Err]
       
     # f (req,res,next)
     f ctx, (err)->
@@ -207,7 +282,7 @@ describe 'flow', ()->
       throw new Error 'FAKE'
       next()
 
-    f = ficent.fn [ func_mk_Err, func_Err]
+    f = ficent.flow [ func_mk_Err, func_Err]
       
     # f (req,res,next)
     f ctx, (err)->
@@ -277,7 +352,7 @@ describe 'fork', ()->
 describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
     ctx = {}
-    f = ficent.fn [ [func1, func2, (ctx,next)-> 
+    f = ficent.flow [ [func1, func2, (ctx,next)-> 
       ctx.zzz = 9
       debug 'fj', ctx
       next()
@@ -294,7 +369,7 @@ describe 'flow  - forkjoin', ()->
 
     ctx = {}
     
-    f = ficent.fn [ [func1, func2, (ctx, next)->
+    f = ficent.flow [ [func1, func2, (ctx, next)->
         next new Error 'fire Err'
       ] ]  
       
@@ -380,7 +455,7 @@ describe 'toss', ()->
   it 'toss data in fork ', (done)-> 
     debug '---------------------', 'toss data in fork'
     # output = {}
-    f = ficent.fn [ 
+    f = ficent.flow [ 
       [
         (toss)-> 
           toss.b = 7
@@ -438,7 +513,7 @@ describe 'toss', ()->
   it 'toss err 1 ', (done)-> 
 
     output = {}
-    f = ficent.fn [ 
+    f = ficent.flow [ 
       (toss)-> 
         fs.rename "test/test0", 'test/test1', toss.err (err)->
           toss null
@@ -456,7 +531,7 @@ describe 'toss', ()->
   it 'toss err 2 ', (done)-> 
 
     output = {}
-    f = ficent.fn [ 
+    f = ficent.flow [ 
       (toss)-> 
         fs.rename "test/test0", 'test/test1', toss
       (toss)->   
