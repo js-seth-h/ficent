@@ -178,9 +178,12 @@ createSeqFn = (args...)->
       cb_callcheck = (err, args...)->
         debug 'cb_callcheck',finx,  err, args
         if called is true
-          brokenErr = new Error 'toss is called twice.' 
-          fnInx = finx
-          _toss brokenErr
+          unless err
+            brokenErr = new Error 'toss is called twice.' 
+            fnInx = finx
+            _toss brokenErr
+          else
+            _toss err 
           return 
           # return 
         called = true

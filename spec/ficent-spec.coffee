@@ -49,26 +49,31 @@ describe 'ficent seq, par', (done)->
 
   #   ficent.do [forkingFns], callback
 
-  it 'par', (done)->
-    # forkingFns = []
-    # ctx = 
-      # cnt : 0
-    # for i  in [0...5]
-      # forkingFns.push (next)->  
-        # ctx.cnt++
-        # next()
-    # f = ficent.fork forkingFns
+  it 'par', (done)-> 
 
     input = [3, 6, 9]
     taskFn = ficent.par (num, next)->
       debug 'par in', num 
       next null, num * 1.5 
-    taskFn input, (err)->
+    taskFn input, (err, results)->
       debug 'par, callback', arguments
       # assert ctx.cnt is 5 , 'fork count 5 ' 
+      expect results
+        .toEqual [4.5, 9, 13.5]
       done()
- 
-# return 
+
+  it 'ser', (done)-> 
+    input = [3, 6, 9]
+    results = []
+    taskFn = ficent.ser (num, next)->
+      debug 'ser in', num 
+      results.push num * 1.5
+      next null
+    taskFn input, (err)->
+      debug 'ser, callback', results
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      done()
+  
 describe 'err?', ()->    
   it 'crypt ', (done)-> 
       
