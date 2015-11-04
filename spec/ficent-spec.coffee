@@ -49,8 +49,7 @@ describe 'ficent seq, par', (done)->
 
   #   ficent.do [forkingFns], callback
 
-  it 'par', (done)-> 
-
+  it 'par', (done)->  
     input = [3, 6, 9]
     taskFn = ficent.par (num, next)->
       debug 'par in', num 
@@ -89,6 +88,23 @@ describe 'ficent seq, par', (done)->
         .toEqual [[6, 30], [12, 60], [18, 90]]
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
+
+  it 'toVars', (done)->
+    async_ab = (callback)->
+      callback null, 1, 2 
+    taskFn = ficent [
+      (_toss)->
+        async_ab _toss.toVars 'a', 'b'
+      (err, _toss)->
+        expect _toss.a
+          .toEqual 1 
+        expect _toss.b
+          .toEqual 2
+        done()
+    ]
+
+    taskFn()
+
   
 describe 'err?', ()->    
   it 'crypt ', (done)-> 

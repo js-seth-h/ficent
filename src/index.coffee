@@ -62,6 +62,16 @@ toss =
     _toss.toss_props = ()->
       toss.toss_props _toss
 
+    _toss.toVars = (names...)->
+      return _toss.err (err, args...)->
+
+        for value, inx in args
+          n = names[inx]
+          if n
+            _toss[n] = value
+        _toss null
+
+
     _toss.err = (nextFn)->
       return (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
