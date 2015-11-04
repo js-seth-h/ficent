@@ -68,9 +68,25 @@ describe 'ficent seq, par', (done)->
     taskFn = ficent.ser (num, next)->
       debug 'ser in', num 
       results.push num * 1.5
-      next null
-    taskFn input, (err)->
+      next null, num * 2
+    taskFn input, (err, numbers)->
       debug 'ser, callback', results
+      expect numbers
+        .toEqual [6, 12, 18]
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      done()
+
+  it 'ser2', (done)-> 
+    input = [3, 6, 9]
+    results = []
+    taskFn = ficent.ser (num, next)->
+      debug 'ser in', num 
+      results.push num * 1.5
+      next null, num * 2, num * 10
+    taskFn input, (err, numbers)->
+      debug 'ser, callback', results
+      expect numbers
+        .toEqual [[6, 30], [12, 60], [18, 90]]
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
   

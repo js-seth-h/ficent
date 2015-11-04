@@ -322,16 +322,22 @@ ficent.ser =
 ficent.series = (flows)->
   taskFn = ficent flows
   return (input_array, callback)->
+    results_array = []
     fns = input_array.map (args)->
       unless _isArray args
         args = [args]
       # debug 'mk Closure Fn with ', args
       return (next)->
         # debug 'inside par', args
-        taskFn args..., next
+        taskFn args..., (err, results_values...)->
+          if results_values.length is 1
+            results_values = results_values[0]
+          results_array.push results_values
+          next err
 
     f = ficent.flow fns
-    f callback
+    f (err)->
+      callback err, results_array
  
 ficent.par = 
 ficent.parallel = (flows)->
