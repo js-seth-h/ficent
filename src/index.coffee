@@ -41,6 +41,8 @@ _isObject = (obj)->
 
 _defaultCallbackFn = (err)->
   if err
+    console.error err
+    console.error err.stack
     throw err  
  
 toss =
@@ -55,20 +57,20 @@ toss =
         # debug 'assign', prop, '=', val
     return
 
-  mixErr: (callback)->
-    return unless callback
-    callback.toss_props = ()->
-      toss.toss_props callback
+  mix_toss: (_toss)->
+    return unless _toss
+    _toss.toss_props = ()->
+      toss.toss_props _toss
 
-    callback.err = (nextFn)->
+    _toss.err = (nextFn)->
       return (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
         if _isError errMayBe # Stupid Proof
-          return callback errMayBe, args...
+          return _toss errMayBe, args...
         try 
           nextFn errMayBe, args...
         catch err
-          callback err
+          _toss err
   toss_props: (fn)-> 
     l = {}
     for own prop, val of fn
@@ -194,7 +196,7 @@ createSeqFn = (args...)->
 
       # debug 'tmpCB ', finx, '<', '_toss'
       toss.assign cb_callcheck, _toss 
-      toss.mixErr cb_callcheck
+      toss.mix_toss cb_callcheck
       return cb_callcheck
 
     _toss = (err, tossArgs...)->
@@ -235,7 +237,7 @@ createSeqFn = (args...)->
       catch newErr
         err = err or newErr 
         _toss err
-    toss.mixErr _toss  
+    toss.mix_toss _toss  
     debug '_toss',  '<', 'outCallback'
     toss.assign _toss, outCallback
     _toss startErr, args... 
@@ -290,7 +292,7 @@ createJoin = (strict = true)->
         finished[inx] = true
 
         callOut()
-      toss.mixErr _cb
+      toss.mix_toss _cb
       inFns.push _cb
       return _cb
     out: (fn)->
@@ -327,13 +329,13 @@ ficent.series = (flows)->
       unless _isArray args
         args = [args]
       # debug 'mk Closure Fn with ', args
-      return (next)->
+      return (_toss)->
         # debug 'inside par', args
-        taskFn args..., (err, results_values...)->
+        taskFn args..., _toss.err (err, results_values...)->
           if results_values.length is 1
             results_values = results_values[0]
           results_array.push results_values
-          next err
+          _toss err
 
     f = ficent.flow fns
     f (err)->
