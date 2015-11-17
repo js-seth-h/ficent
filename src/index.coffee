@@ -62,7 +62,7 @@ toss =
     _toss.toss_props = ()->
       toss.toss_props _toss
 
-    _toss.toVars = (names...)->
+    _toss.setVar = (names...)->
       return _toss.err (err, args...)->
 
         for value, inx in args

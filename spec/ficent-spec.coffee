@@ -89,12 +89,12 @@ describe 'ficent seq, par', (done)->
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
-  it 'toVars', (done)->
+  it 'setVar', (done)->
     async_ab = (callback)->
       callback null, 1, 2 
     taskFn = ficent [
       (_toss)->
-        async_ab _toss.toVars 'a', 'b'
+        async_ab _toss.setVar 'a', 'b'
       (err, _toss)->
         expect _toss.a
           .toEqual 1 
