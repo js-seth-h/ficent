@@ -96,9 +96,9 @@ describe 'ficent seq, par', (done)->
       (_toss)->
         async_ab _toss.setVar 'a', 'b'
       (err, _toss)->
-        expect _toss.a
+        expect _toss.var 'a'
           .toEqual 1 
-        expect _toss.b
+        expect _toss.var 'b'
           .toEqual 2
         done()
     ]
@@ -504,16 +504,16 @@ describe 'toss', ()->
       (toss)->
         toss.c = toss.a * toss.b
         output = toss
-        debug 'when FN 3 ', toss.toss_props()
+        # debug 'when FN 3 ', toss.toss_props()
         toss null
       [
         (toss)-> 
-          debug 'FN4-1 = ', toss.toss_props() 
+          # debug 'FN4-1 = ', toss.toss_props() 
           toss.c2 = toss.c * 2
           debug 'mk c2', toss.c
           toss()
         (toss)->   
-          debug 'FN4-1 = ', toss.toss_props()
+          # debug 'FN4-1 = ', toss.toss_props()
           toss.c3 = toss.c * 3
           debug 'mk c3', toss.c
           # l = ''

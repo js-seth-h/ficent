@@ -44,24 +44,11 @@ _defaultCallbackFn = (err)->
     console.error err
     console.error err.stack
     throw err  
- 
-toss =
-  assign : (fn, srcFn...)->
-    return unless fn
-    for t in srcFn
-      # debug ' < ', toss.toss_props t
-      for own prop, val of t
-        continue if prop is 'err'
-        continue if prop is 'toss_props'
-        fn[prop] = val
-        # debug 'assign', prop, '=', val
-    return
-
-  mix_toss: (_toss)->
-    return unless _toss
-    _toss.toss_props = ()->
-      toss.toss_props _toss
-
+toss_fn_maker =
+  var: (_toss)->
+    _toss.var = (name)->
+      return _toss[name]
+  setVar: (_toss)->
     _toss.setVar = (names...)->
       return _toss.err (err, args...)->
 
@@ -70,8 +57,7 @@ toss =
           if n
             _toss[n] = value
         _toss null
-
-
+  err: (_toss)->
     _toss.err = (nextFn)->
       return (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
@@ -81,13 +67,38 @@ toss =
           nextFn errMayBe, args...
         catch err
           _toss err
-  toss_props: (fn)-> 
-    l = {}
-    for own prop, val of fn
-      continue if prop is 'err'
-      continue if prop is 'toss_props'
-      l[prop] = val
-    return l
+
+ 
+toss_lib =
+  assignToFrom: (fn, srcFn...)->
+    return unless fn
+
+    for t in srcFn
+      # debug ' < ', toss.toss_props t
+      for own prop, val of t
+        continue if toss_fn_maker[prop] 
+        # continue if prop is 'toss_props'
+        fn[prop] = val
+        # debug 'assign', prop, '=', val
+    return
+
+  makeTossableFn: (_toss)->
+    return unless _toss
+
+    for own k, fn of toss_fn_maker
+      fn _toss
+    # _toss.toss_props = ()->
+    #   toss.toss_props _toss
+
+
+
+  # toss_props: (fn)-> 
+  #   l = {}
+  #   for own prop, val of fn
+  #     continue if prop is 'err'
+  #     continue if prop is 'toss_props'
+  #     l[prop] = val
+  #   return l
     # return require('util').inspect(l)
     # return JSON.stringify l, null, 2 
   # print: (fn)->
@@ -117,7 +128,7 @@ createMuxFn = (muxArgs...)->
     join = createJoin()
     forkingFns.forEach (flow)->
       cbIn = join.in()
-      toss.assign cbIn, outCallback
+      toss_lib.assignToFrom cbIn, outCallback
       flow args..., cbIn
 
     _insideCb = (err, args...)->
@@ -125,7 +136,7 @@ createMuxFn = (muxArgs...)->
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or newFn
-      toss.assign outCallback, _insideCb
+      toss_lib.assignToFrom outCallback, _insideCb
       outCallback err, args...
 
     join.out _insideCb
@@ -201,12 +212,12 @@ createSeqFn = (args...)->
         called = true
 
         # debug  '_toss', '<', 'tmpCB ', finx
-        toss.assign _toss, cb_callcheck 
+        toss_lib.assignToFrom _toss, cb_callcheck 
         _toss err, args... 
 
       # debug 'tmpCB ', finx, '<', '_toss'
-      toss.assign cb_callcheck, _toss 
-      toss.mix_toss cb_callcheck
+      toss_lib.assignToFrom cb_callcheck, _toss 
+      toss_lib.makeTossableFn cb_callcheck
       return cb_callcheck
 
     _toss = (err, tossArgs...)->
@@ -220,7 +231,7 @@ createSeqFn = (args...)->
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
         # debug 'outCallback',  '<', '_toss'
-        toss.assign outCallback, _toss
+        toss_lib.assignToFrom outCallback, _toss
          
         return outCallback err, tossArgs... #  contextArgs...
 
@@ -247,9 +258,9 @@ createSeqFn = (args...)->
       catch newErr
         err = err or newErr 
         _toss err
-    toss.mix_toss _toss  
+    toss_lib.makeTossableFn _toss  
     debug '_toss',  '<', 'outCallback'
-    toss.assign _toss, outCallback
+    toss_lib.assignToFrom _toss, outCallback
     _toss startErr, args... 
   # startFn.hint = hint
 
@@ -281,7 +292,7 @@ createJoin = (strict = true)->
     if allFnished and outFn
       err = _unifyErrors errors
       # results.obj = resultsObj
-      toss.assign outFn, inFns...
+      toss_lib.assignToFrom outFn, inFns...
       outFn err, results
 
   fns = 
@@ -302,7 +313,7 @@ createJoin = (strict = true)->
         finished[inx] = true
 
         callOut()
-      toss.mix_toss _cb
+      toss_lib.makeTossableFn _cb
       inFns.push _cb
       return _cb
     out: (fn)->
