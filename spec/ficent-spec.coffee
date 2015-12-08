@@ -94,12 +94,15 @@ describe 'ficent seq, par', (done)->
       callback null, 1, 2 
     taskFn = ficent [
       (_toss)->
+        _toss.var 'c', 20
         async_ab _toss.setVar 'a', 'b'
       (err, _toss)->
         expect _toss.var 'a'
           .toEqual 1 
         expect _toss.var 'b'
           .toEqual 2
+        expect _toss.var 'c'
+          .toEqual 20
         done()
     ]
 

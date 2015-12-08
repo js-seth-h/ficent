@@ -46,8 +46,10 @@ _defaultCallbackFn = (err)->
     throw err  
 toss_fn_maker =
   var: (_toss)->
-    _toss.var = (name)->
-      return _toss[name]
+    _toss.var = (name, value)->
+      return _toss[name] unless value 
+      _toss[name] = value
+      
   setVar: (_toss)->
     _toss.setVar = (names...)->
       return _toss.err (err, args...)->
