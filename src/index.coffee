@@ -27,10 +27,13 @@ Arity가 다르면, 아규먼트도 다를테니, 별 문제가 없겠다.
 첫 인수가 NULL이거나 Err일때를 Callback 상황으로 가정하면 별 문제 없을듯...
 일반적인 경우 첫 인수가 NULL인경우는 거의 없다..
 ###
-
-_toString = Object.prototype.toString
+ 
+_isNumeric = (obj)->
+    return !_isArray( obj ) && (obj - parseFloat( obj ) + 1) >= 0;
+_isString = (obj)->
+  typeof obj == 'string' || obj instanceof String  
 _isArray = Array.isArray or (obj) ->
-  _toString.call(obj) is "[object Array]"
+  Object.prototype.toString.call(obj) is "[object Array]"
 _isError = (obj)-> 
   return obj instanceof Error
   # _toString.call(obj) is "[object Error]" # Error을 상속받으면 부정확.
@@ -46,13 +49,18 @@ _defaultCallbackFn = (err)->
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
-  desc: 'no-name'
+  desc: (_toss)->
+    unless _toss.desc
+      _toss.desc = 'no-named-toss'
 
   _tossable: (_toss)->
     _toss._tossable = true
 
   _var_read: {}
   _var_write: {}
+  const: (_toss)->
+    _toss.const = (name, value)->
+      _toss._var_read[name] = value
   var: (_toss)->
     _toss.var = (name, value)->
       # return _toss[name] unless value 
@@ -64,7 +72,6 @@ toss_fn_maker =
       else 
         # write
         _toss._var_write[name] = value
-
       
   setVar: (_toss)->
     _toss.setVar = (names...)->
@@ -74,7 +81,18 @@ toss_fn_maker =
           if n
             _toss.var n, value
         _toss null
-
+  vars: (_toss)->
+    _toss.vars = ()->
+      _tmp = {}
+      for own k, v of _toss._var_read
+        _tmp[k] = v
+      for own k, v of _toss._var_write
+        _tmp[k] = v
+      vars = []
+      for own k, v of _tmp
+        vars.push k
+      return vars
+ 
   _args: []
   args: (_toss)->
     _toss.args = ()->
@@ -104,33 +122,44 @@ toss_lib =
         v _toss
       else 
         _toss[k] = v
-    # _toss.desc = desc
+
+    if _toss.desc is 'no-named-toss'
+      _toss.desc = desc
+
+    # debug 'set Desc', '1', _toss.desc ,'2', desc , '3', 'no-named-toss'
+    # _toss.desc = _toss.desc or desc or 'no-named-toss'
     # _toss.toss_props = ()->
     #   toss.toss_props _toss
 
-  tossData : (fn, srcFn...)->
+  tossData : (fn, srcFns...)->
 
     # return unless fn
 
     # debug '-----------------------------------------------------'
-    debug 'toss data', fn.desc , '<<', srcFn.map((x)-> x.desc).join ','
+    # debug 'toss data', fn.desc , '<<', srcFn.map((x)-> x.desc).join ','
 
     return if fn._tossable isnt true
 
-    for t in srcFn
-      continue if t._tossable isnt true
-      debug '     copy', fn.desc , '<<', t.desc
-      for own prop, val of t
-        continue if toss_fn_maker[prop]  
-        fn.var prop, val
-        debug '         ' + prop
+    for srcFn in srcFns
+      continue if srcFn._tossable isnt true
+      debug 'toss-data', fn.desc , '<<', srcFn.desc
+      # fn._args = srcFn._args
+      fn.setArgs srcFn.args()
+
+      for key, inx in srcFn.vars()
+        fn.const key, srcFn.var key
+
+      # for own prop, val of t
+      #   continue if toss_fn_maker.hasOwnProperty prop  
+      #   fn.var prop, val
+      #   debug '         ', prop, val
     return
 
   # assignToFrom: (fn, srcFn)->
   #   # debug '-----------------------------------------------------'
-  #   srcFn_desc = srcFn.desc or srcFn
-  #   fn_desc  = fn.desc or fn
-  #   debug 'assignToFrom', fn_desc , '<<', srcFn_desc 
+  #   srcFn_name = srcFn.desc or srcFn
+  #   fn_name  = fn.desc or fn
+  #   debug 'assignToFrom', fn_name , '<<', srcFn_name 
 
   #   if fn._tossable isnt true
   #     throw new Error 'fn._tossable'
@@ -164,6 +193,17 @@ toss_lib =
   # print: (fn)->
   #   debug 'toss.print', toss.toss_props fn
 
+_validating = (fns, prefix)->
+  # _valid = (arr, prefix)->
+  for item, inx in fns
+    item.desc = "#{prefix}.#{inx}" unless item.desc
+    # debug item.desc, item
+    if _isArray item
+      _validating item, item.desc
+    else if _isFunction item
+    else if _isString item
+    else
+      throw new Error 'item of ficent flow must be function or array'  
 createMuxFn = (muxArgs...)->
   hint = undefined
   if muxArgs.length is 1
@@ -171,29 +211,38 @@ createMuxFn = (muxArgs...)->
   else 
     [hint, fns] = muxArgs
 
-  forkingFns = fns.map (flow, inx)->  
-    # _hint = 
-      # at:  'ficent nested fork ' + inx
-    return createSeqFn flow
     # return flow
 
+  # _validating = (fns, prefix='fork')->
+  #   # _valid = (arr, prefix)->
+  #   # debug '_validating', prefix
+  #   for item, inx in fns
+  #     # item.desc = "#{prefix}.#{inx}" unless item.desc
+  #     debug item.desc, item
+  #     if _isArray item
+  #       _validating item, item.desc
+  #     else if _isFunction item
+  #     else if _isString item
+  #     else
+  #       throw new Error 'item of ficent flow must be function or array'  
+    # _valid fns, prefix
+
   newFn = (args..., outCallback)-> 
-    # runFork fnArr, args, next 
-    # debug 'createMuxFn, newFn ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-    # debug 'toss.print', toss.toss_props outCallback
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = _defaultCallbackFn
-    else 
-      toss_lib.makeTossableFn outCallback, 'ficent.fork.outCallback'
+    # else 
+      # toss_lib.makeTossableFn outCallback, "#{newFn.desc}.outcallback"
 
 
+    debug 'mux    ', newFn.desc, '->', outCallback.desc 
     join = createJoin()
     forkingFns.forEach (flow, inx)->
       cbIn = join.in()
+      toss_lib.makeTossableFn cbIn, "#{flow.desc}.callback"
       toss_lib.tossData cbIn, outCallback
-      flow.desc = "fork.#{inx}"
-      debug flow.desc, 'calling ->', cbIn.desc
+      # flow.desc = "fork.#{inx}"
+      debug 'calling  ', flow.desc, '->', cbIn.desc
       flow args..., cbIn
 
     _insideCb = (err, args...)->
@@ -204,13 +253,20 @@ createMuxFn = (muxArgs...)->
       toss_lib.tossData outCallback, _insideCb
       outCallback err, args...
 
-    toss_lib.makeTossableFn _insideCb, 'fork-before-outcallback'
+    toss_lib.makeTossableFn _insideCb, "#{newFn.desc}.before-outcallback"
     join.out _insideCb
 
   # newFn.hint = hint
   for own k, v of hint
-    debug 'set hint kv', k, v
-    newFn[k] = v 
+    Object.defineProperty newFn, k, {value: v, writable: true } 
+    # debug 'set hint kv', k, v
+    # newFn[k] = v 
+  newFn.desc = newFn.desc or 'fork'
+  _validating fns, newFn.desc
+
+  forkingFns = fns.map (flow, inx)->  
+    _fn = createSeqFn {desc: "#{newFn.desc}.flow-wrap.#{inx}" }, flow
+    return _fn
   return newFn
 
 createSeqFn = (args...)->
@@ -222,16 +278,8 @@ createSeqFn = (args...)->
 
 
   if not _isArray flowFns
-    flowFns = [flowFns]
-
-  _validating = (fns)->
-    _valid = (arr)->
-      for item in arr
-        if _isArray item
-          _valid item
-        else
-          throw new Error 'item of ficent flow must be function or array' unless _isFunction item
-    _valid fns 
+    flowFns = [flowFns] 
+    # _valid fns, prefix
 
   _startArg = (args..., done)-> 
     # debug 'createSeqFn', '_startArg'
@@ -246,12 +294,10 @@ createSeqFn = (args...)->
       if typeof done isnt 'function'
         args.push done
       else
-        toss_lib.makeTossableFn done, 'ficent.flow.outCallback'
-
+        # toss_lib.makeTossableFn done, "#{startFn.desc}.outcallback" 
         outCallback = done  
     return [ startErr, args, outCallback]
 
-  _validating flowFns
   startFn = (args...)->   
     fnInx = 0
     contextArgs = null
@@ -261,85 +307,93 @@ createSeqFn = (args...)->
     [startErr, args, outCallback] = _startArg args... 
     # debug 'createSeqFn, startFn *********************************************'
     # debug 'toss.print', toss.toss_props  outCallback
-
+    debug 'seq    ', startFn.desc, '->', outCallback.desc 
     contextArgs = args
 
-    _createTmpCB = (finx)->
+    _createTmpCB = (fn_desc)->
       called = false
       cb_callcheck = (err, args...)->
-        debug cb_callcheck.desc, 'returned', err, args...
+        # debug cb_callcheck.desc, 'returned', err, args...
         if called is true
           unless err
             brokenErr = new Error 'toss is called twice.' 
-            fnInx = finx
-            _toss brokenErr
+            # fnInx = finx
+            _call_next_fn brokenErr
           else
-            _toss err 
+            _call_next_fn err 
           return 
           # return 
         called = true
 
-        # debug  '_toss', '<', 'tmpCB ', finx
-        toss_lib.tossData _toss, cb_callcheck 
-        _toss err, args... 
+        # debug  '_call_next_fn', '<', 'tmpCB ', finx
+        toss_lib.tossData _call_next_fn, cb_callcheck 
+        debug 'returned ', cb_callcheck.desc, 'with', args...
+        _call_next_fn err, args... 
 
-      # debug 'tmpCB ', finx, '<', '_toss'
-      toss_lib.makeTossableFn cb_callcheck,  "ficent.flow.callback.of-#{finx}"
+      # debug 'tmpCB ', finx, '<', '_call_next_fn'
+      toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
       return cb_callcheck
 
-    _toss = (err, tossArgs...)->
+    _call_next_fn = (err, tossArgs...)->
       if brokenErr
         return if err isnt brokenErr
 
-      _toss.setArgs tossArgs
+      _call_next_fn.setArgs tossArgs
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or startFn 
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
-        # debug 'outCallback',  '<', '_toss'
-        toss_lib.tossData outCallback, _toss
+        # debug 'outCallback',  '<', '_call_next_fn'
+        toss_lib.tossData outCallback, _call_next_fn
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
-      fn.desc = "flow.#{fnInx}"
+      # fn.desc = "flow.#{fnInx}"
       # debug 'createSeqFn', 'toss', fnInx
       fnInx++ 
 
       if _isArray fn 
-        fn = createMuxFn hint, fn 
-        fn.desc = "flow.#{fnInx}.fork-wrap"
+        fn = createMuxFn {desc: "#{fn.desc}.fork-wrap"}, fn 
+        # fn.desc = "flow.#{fnInx}.fork-wrap"
 
       unless _isFunction fn
         outCallback new Error 'ficent only accept Function or Array'
         return
       isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
       if err and not isErrorHandlable
-        return _toss err
+        return _call_next_fn err
 
       try
-        cb = _createTmpCB (fnInx - 1)
-        toss_lib.tossData cb, _toss 
-        debug fn.desc, 'calling'
+        cb = _createTmpCB fn.desc
+        toss_lib.tossData cb, _call_next_fn 
+
+        debug 'calling  ', fn.desc, '->', cb.desc
         if isErrorHandlable
           fn err, contextArgs..., cb
         else
           fn contextArgs..., cb
       catch newErr
         err = err or newErr 
-        _toss err
+        _call_next_fn err
 
-    toss_lib.makeTossableFn _toss, 'ficent.internal-nexter'
-    # debug '_toss',  '<', 'outCallback'
-    toss_lib.tossData _toss, outCallback
-    _toss startErr, args... 
+    toss_lib.makeTossableFn _call_next_fn, "#{startFn.desc}.internal-next"
+    # debug '_call_next_fn',  '<', 'outCallback'
+    toss_lib.tossData _call_next_fn, outCallback
+    _call_next_fn startErr, args... 
   # startFn.hint = hint
 
   # debug 'hint ===', hint
+  # debug 'startFn.desc', startFn.desc 
   for own k, v of hint
     # debug 'set Hint kv', k, v
     # startFn[k] = v 
-    Object.defineProperty startFn, k, {value: v } 
+    Object.defineProperty startFn, k, {value: v, writable: true } 
+
+
+  startFn.desc = startFn.desc or 'ficent'
+  _validating flowFns, startFn.desc
+ 
   return startFn
  
  
@@ -384,7 +438,7 @@ createJoin = (strict = true)->
         finished[inx] = true
 
         callOut()
-      toss_lib.makeTossableFn _cb_forked, "join.callback.#{inx}.(#{varName})"
+      # toss_lib.makeTossableFn _cb_forked, "join.callback.#{inx}.(#{varName})"
       inFns.push _cb_forked
       return _cb_forked
     out: (fn)->

@@ -19,7 +19,7 @@ describe 'flow', ()->
     ctx = 
       name : 'context base'
     
-    fx = ficent [
+    fx = ficent {desc: 'fx'}, [
       func1, 
       func2, 
       (err, ctx, next)->
@@ -219,28 +219,29 @@ describe 'flow', ()->
 describe 'fork', ()->    
   it 'basic', (done)-> 
 
-    f = ficent.fork [
+    f = ficent.fork {desc: 'fx'}, [
       (ctx, _toss)->  
-        ctx.cnt++
+        ctx.cnt++ # 1
+        _toss null
+      (ctx, _toss)->
+        ctx.x = 2  
+        ctx.cnt++ # 2 
         _toss null
       (ctx, _toss)->  
-        ctx.cnt++
+        ctx.cnt++ # 3
         _toss null
       (ctx, _toss)->  
-        ctx.cnt++
+        ctx.cnt++ # 4
         _toss null
       (ctx, _toss)->  
-        ctx.cnt++
-        _toss null
-      (ctx, _toss)->  
-        ctx.cnt++
+        ctx.cnt++ # 5
         _toss null
     ]
     ctx =  cnt : 0 
     f ctx, (err)->
       assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
-
+  
   it 'with Err', (done)->
     forkingFns = []
     ctx = cnt : 0
@@ -359,6 +360,7 @@ describe 'wrap', ()->
  
  
 
+
 describe 'toss', ()->
 
 
@@ -407,12 +409,12 @@ describe 'toss', ()->
       [
         (toss)-> 
           # debug 'FN4-1 = ', toss.toss_props() 
-          toss.c2 = toss.var('c') * 2
+          toss.var 'c2', toss.var('c') * 2
           debug 'mk c2', toss.var('c')
           toss()
         (toss)->   
           # debug 'FN4-1 = ', toss.toss_props()
-          toss.c3 = toss.var('c') * 3
+          toss.var 'c3', toss.var('c') * 3
           debug 'mk c3', toss.var('c')
           # l = ''
           # l += "#{k}:#{v},"  for own k, v of toss
@@ -448,7 +450,7 @@ describe 'toss', ()->
         console.error e.stack
 
       done()
-  return 
+
   it 'toss err 1 ', (done)-> 
 
     output = {}
@@ -539,62 +541,75 @@ describe 'toss', ()->
     g = ficent [
       (_toss)->
         debug 'double toss', 'g'
-        _toss.g = 12
+        _toss.var 'g', 12
         _toss null
     ]
     f = ficent [
       (_toss)->
         debug 'double toss', 'f.a'
-        _toss.a = 11
+        _toss.var 'a', 11
         _toss null
       (_toss)->
         debug 'double toss', 'f g()'
         g _toss
       (_toss)->
         debug 'double toss', 'ag'
-        _toss.ag = _toss.a * _toss.g
-        _toss null
+        _toss.var 'ag', _toss.var('a') * _toss.var('g')
+        _toss null, _toss
       ]
 
-    outCall = (err)->
+    outCall = (err, outCall)->
       debug 'double toss', 'outCall'
       expect err
         .toBe null
-      expect outCall.ag 
+      expect outCall.var 'ag' 
         .toEqual 11 * 12 
       done()
     f outCall
 
  
-  it 'double toss params', (done)->
+  it 'double toss args()', (done)->
     g = ficent [
       (_toss)->
         debug 'double toss', 'g'
-        _toss.g = 12
+        _toss.var 'g', 12
         _toss null, 19
     ]
     f = ficent [
       (_toss)->
         debug 'double toss', 'f.a'
-        _toss.a = 11
+        _toss.var 'a', 11
         _toss null
       (_toss)->
         debug 'double toss', 'f g()'
         g _toss
       (_toss)->
-        debug 'double toss', 'ag', '_toss.params',_toss.params
-        _toss.ag = _toss.a * _toss.params[0]
+        debug 'a, b',  _toss.var('a'), _toss.var 'g'
+        _toss.var 'ag', _toss.var('a') * _toss.var 'g'
         _toss null
-      ]
+      (_toss)->
+        debug 'back 1,2,3'
+        _toss null, 1, 2, 3
+      (_toss)->
+        debug 'args()', _toss.args()
+        _toss.var 'in_args', _toss.args()
+        _toss null
+      (_toss)->
+        expect _toss.var 'ag' 
+          .toEqual 11 * 12
+        expect _toss.var 'in_args'
+          .toEqual [1,2,3]
+        _toss null
+    ]
 
     outCall = (err)->
-      debug 'double toss', 'outCall'
+      debug 'double toss', 'outCall'      
       expect err
         .toBe null
-      expect outCall.ag 
-        .toEqual 11 * 19
+
       done()
     f outCall
+
 # describe 'ficent.join', ()->
 #   it 'throw in out()', (done)->
 
@@ -689,8 +704,8 @@ describe 'hint', ()->
     f (err)->
       assert util.isError err, 'error'
       assert ctx.cnt is 5 , 'fork count 5 ' 
-      expect err.hint.nick 
-        .toEqual 'function f()'
+      # expect err.hint.nick 
+      #   .toEqual 'function f()'
       done()
 
 
