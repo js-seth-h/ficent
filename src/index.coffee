@@ -44,7 +44,12 @@ _defaultCallbackFn = (err)->
     console.error err
     console.error err.stack
     throw err  
+_defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
+  desc: ()->
+
+  _tossable: (_toss)->
+    _toss._tossable = true
   var: (_toss)->
     _toss.var = (name, value)->
       return _toss[name] unless value 
@@ -59,9 +64,17 @@ toss_fn_maker =
           if n
             _toss[n] = value
         _toss null
+
+  _args: ()->
+  args: (_toss)->
+    _toss.args = ()->
+      return _toss._args
+  setArgs: (_toss)->
+    _toss.setArgs = (args)->
+      _toss._args = args
   err: (_toss)->
     _toss.err = (nextFn)->
-      return (errMayBe, args...)->
+      cb = (errMayBe, args...)->
         # debug 'err-to', 'take', arguments
         if _isError errMayBe # Stupid Proof
           return _toss errMayBe, args...
@@ -70,25 +83,57 @@ toss_fn_maker =
         catch err
           _toss err
 
+      return  cb
+
  
 toss_lib =
-  assignToFrom: (fn, srcFn...)->
-    return unless fn
+  tossData : (fn, srcFn...)->
+
+    # return unless fn
+
+    # debug '-----------------------------------------------------'
+    debug 'toss data', fn.desc , '<<', srcFn.map((x)-> x.desc).join ','
+
+    return if fn._tossable isnt true
 
     for t in srcFn
-      # debug ' < ', toss.toss_props t
+      continue if t._tossable isnt true
+      debug '     copy', fn.desc , '<<', t.desc
       for own prop, val of t
-        continue if toss_fn_maker[prop] 
-        # continue if prop is 'toss_props'
+        continue if toss_fn_maker[prop]  
         fn[prop] = val
-        # debug 'assign', prop, '=', val
+        debug '         ' + prop
     return
 
-  makeTossableFn: (_toss)->
-    return unless _toss
+  # assignToFrom: (fn, srcFn)->
+  #   # debug '-----------------------------------------------------'
+  #   srcFn_desc = srcFn.desc or srcFn
+  #   fn_desc  = fn.desc or fn
+  #   debug 'assignToFrom', fn_desc , '<<', srcFn_desc 
 
+  #   if fn._tossable isnt true
+  #     throw new Error 'fn._tossable'
+  #     return 
+  #   if srcFn._tossable isnt true
+  #     throw new Error 'srcFn._tossable'
+  #     return 
+  #   debug '     copy', fn.desc , '<<', srcFn.desc
+
+  #   # for t in srcFn
+  #     # debug ' < ', toss.toss_props t
+  #   for own prop, val of srcFn
+  #     continue if toss_fn_maker[prop] 
+  #     # continue if prop is 'toss_props'
+  #     fn[prop] = val
+  #     debug '         ' + prop
+  #     # debug 'assign', prop, '=', val
+  #   return
+
+  makeTossableFn: (_toss, desc)->
+    return unless _toss 
     for own k, fn of toss_fn_maker
       fn _toss
+    _toss.desc = desc
     # _toss.toss_props = ()->
     #   toss.toss_props _toss
 
@@ -121,16 +166,21 @@ createMuxFn = (muxArgs...)->
 
   newFn = (args..., outCallback)-> 
     # runFork fnArr, args, next 
-    debug 'createMuxFn, newFn ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+    # debug 'createMuxFn, newFn ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
     # debug 'toss.print', toss.toss_props outCallback
     if typeof outCallback isnt 'function'
       args.push outCallback
       outCallback = _defaultCallbackFn
+    else 
+      toss_lib.makeTossableFn outCallback, 'ficent.fork.outCallback'
+
 
     join = createJoin()
-    forkingFns.forEach (flow)->
+    forkingFns.forEach (flow, inx)->
       cbIn = join.in()
-      toss_lib.assignToFrom cbIn, outCallback
+      toss_lib.tossData cbIn, outCallback
+      flow.desc = "fork.#{inx}"
+      debug flow.desc, 'calling ->', cbIn.desc
       flow args..., cbIn
 
     _insideCb = (err, args...)->
@@ -138,9 +188,10 @@ createMuxFn = (muxArgs...)->
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or newFn
-      toss_lib.assignToFrom outCallback, _insideCb
+      toss_lib.tossData outCallback, _insideCb
       outCallback err, args...
 
+    toss_lib.makeTossableFn _insideCb, 'fork-before-outcallback'
     join.out _insideCb
 
   # newFn.hint = hint
@@ -182,6 +233,8 @@ createSeqFn = (args...)->
       if typeof done isnt 'function'
         args.push done
       else
+        toss_lib.makeTossableFn done, 'ficent.flow.outCallback'
+
         outCallback = done  
     return [ startErr, args, outCallback]
 
@@ -193,7 +246,7 @@ createSeqFn = (args...)->
     brokenErr = null
 
     [startErr, args, outCallback] = _startArg args... 
-    debug 'createSeqFn, startFn *********************************************'
+    # debug 'createSeqFn, startFn *********************************************'
     # debug 'toss.print', toss.toss_props  outCallback
 
     contextArgs = args
@@ -201,7 +254,7 @@ createSeqFn = (args...)->
     _createTmpCB = (finx)->
       called = false
       cb_callcheck = (err, args...)->
-        debug 'cb_callcheck',finx,  err, args
+        debug cb_callcheck.desc, 'returned', err, args...
         if called is true
           unless err
             brokenErr = new Error 'toss is called twice.' 
@@ -214,35 +267,35 @@ createSeqFn = (args...)->
         called = true
 
         # debug  '_toss', '<', 'tmpCB ', finx
-        toss_lib.assignToFrom _toss, cb_callcheck 
+        toss_lib.tossData _toss, cb_callcheck 
         _toss err, args... 
 
       # debug 'tmpCB ', finx, '<', '_toss'
-      toss_lib.assignToFrom cb_callcheck, _toss 
-      toss_lib.makeTossableFn cb_callcheck
+      toss_lib.makeTossableFn cb_callcheck,  "ficent.flow.callback.of-#{finx}"
       return cb_callcheck
 
     _toss = (err, tossArgs...)->
       if brokenErr
         return if err isnt brokenErr
 
-      _toss.params = tossArgs
+      _toss.setArgs tossArgs
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or startFn 
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
         # debug 'outCallback',  '<', '_toss'
-        toss_lib.assignToFrom outCallback, _toss
-         
+        toss_lib.tossData outCallback, _toss
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
+      fn.desc = "flow.#{fnInx}"
       # debug 'createSeqFn', 'toss', fnInx
       fnInx++ 
 
       if _isArray fn 
         fn = createMuxFn hint, fn 
+        fn.desc = "flow.#{fnInx}.fork-wrap"
 
       unless _isFunction fn
         outCallback new Error 'ficent only accept Function or Array'
@@ -253,6 +306,8 @@ createSeqFn = (args...)->
 
       try
         cb = _createTmpCB (fnInx - 1)
+        toss_lib.tossData cb, _toss 
+        debug fn.desc, 'calling'
         if isErrorHandlable
           fn err, contextArgs..., cb
         else
@@ -260,15 +315,16 @@ createSeqFn = (args...)->
       catch newErr
         err = err or newErr 
         _toss err
-    toss_lib.makeTossableFn _toss  
-    debug '_toss',  '<', 'outCallback'
-    toss_lib.assignToFrom _toss, outCallback
+
+    toss_lib.makeTossableFn _toss, 'ficent.internal-nexter'
+    # debug '_toss',  '<', 'outCallback'
+    toss_lib.tossData _toss, outCallback
     _toss startErr, args... 
   # startFn.hint = hint
 
-  debug 'hint ===', hint
+  # debug 'hint ===', hint
   for own k, v of hint
-    debug 'set Hint kv', k, v
+    # debug 'set Hint kv', k, v
     # startFn[k] = v 
     Object.defineProperty startFn, k, {value: v } 
   return startFn
@@ -294,7 +350,7 @@ createJoin = (strict = true)->
     if allFnished and outFn
       err = _unifyErrors errors
       # results.obj = resultsObj
-      toss_lib.assignToFrom outFn, inFns...
+      toss_lib.tossData outFn, inFns...
       outFn err, results
 
   fns = 
@@ -305,7 +361,7 @@ createJoin = (strict = true)->
       results.push undefined
       finished.push false
  
-      _cb = (err, values...)->
+      _cb_forked = (err, values...)->
         throw new Error 'should call `callback` once' if finished[inx] and strict
         errors[inx] = err
         values = values[0] if values.length is 1
@@ -315,9 +371,9 @@ createJoin = (strict = true)->
         finished[inx] = true
 
         callOut()
-      toss_lib.makeTossableFn _cb
-      inFns.push _cb
-      return _cb
+      toss_lib.makeTossableFn _cb_forked, "join.callback.#{inx}.(#{varName})"
+      inFns.push _cb_forked
+      return _cb_forked
     out: (fn)->
       outFn = fn
       callOut()

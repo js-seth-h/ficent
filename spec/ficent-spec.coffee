@@ -14,121 +14,6 @@ func2 = (ctx, next)->
   next()
 
 
-describe 'ficent seq, par', (done)->    
-  # it 'flow ', (done)->  
-  #   callback = (err)-> 
-  #     expect err
-  #       .toEqual null
-  #     # assert not util.isError err, 'no error'
-  #     expect ctx.a 
-  #       .toBeTruthy()
-  #     expect ctx.b
-  #       .toBeTruthy()
-  #     done() 
-  #   ctx = 
-  #     name : 'context base'
-    
-
-  #   ficent.do ctx, [
-  #       func1, 
-  #       func2
-  #     ], callback
-
-  # it 'fork', (done)->
-  #   forkingFns = []
-  #   ctx = 
-  #     cnt : 0
-  #   for i  in [0...5]
-  #     forkingFns.push (next)->  
-  #       ctx.cnt++
-  #       next()
-  #   # f = ficent.fork forkingFns
-  #   callback = (err)->
-  #     assert ctx.cnt is 5 , 'fork count 5 ' 
-  #     done()
-
-  #   ficent.do [forkingFns], callback
-
-  it 'par', (done)->  
-    input = [3, 6, 9]
-    taskFn = ficent.par (num, next)->
-      debug 'par in', num 
-      next null, num * 1.5 
-    taskFn input, (err, results)->
-      debug 'par, callback', arguments
-      # assert ctx.cnt is 5 , 'fork count 5 ' 
-      expect results
-        .toEqual [4.5, 9, 13.5]
-      done()
-
-  it 'ser', (done)-> 
-    input = [3, 6, 9]
-    results = []
-    taskFn = ficent.ser (num, next)->
-      debug 'ser in', num 
-      results.push num * 1.5
-      next null, num * 2
-    taskFn input, (err, numbers)->
-      debug 'ser, callback', results
-      expect numbers
-        .toEqual [6, 12, 18]
-      # assert ctx.cnt is 5 , 'fork count 5 ' 
-      done()
-
-  it 'ser2', (done)-> 
-    input = [3, 6, 9]
-    results = []
-    taskFn = ficent.ser (num, next)->
-      debug 'ser in', num 
-      results.push num * 1.5
-      next null, num * 2, num * 10
-    taskFn input, (err, numbers)->
-      debug 'ser, callback', results
-      expect numbers
-        .toEqual [[6, 30], [12, 60], [18, 90]]
-      # assert ctx.cnt is 5 , 'fork count 5 ' 
-      done()
-
-  it 'setVar', (done)->
-    async_ab = (callback)->
-      callback null, 1, 2 
-    taskFn = ficent [
-      (_toss)->
-        _toss.var 'c', 20
-        async_ab _toss.setVar 'a', 'b'
-      (err, _toss)->
-        expect _toss.var 'a'
-          .toEqual 1 
-        expect _toss.var 'b'
-          .toEqual 2
-        expect _toss.var 'c'
-          .toEqual 20
-        done()
-    ]
-
-    taskFn()
-
-  
-describe 'err?', ()->    
-  it 'crypt ', (done)-> 
-      
-
-    md5 = (v)-> require("crypto").createHash("md5").update(v).digest("hex")
-
-    do ficent [
-      (_toss)->
-        fs.lstat 'package.json', _toss.err (err)->
-          _toss null
-      (_toss)->
-        crypto = require 'crypto'
-        salt = md5 crypto.randomBytes(40).readUInt32LE(0)
-        _toss null
-      (err,_toss)->
-
-        debug 'err = ',err
-        done()
-    ]
-
 describe 'flow', ()->    
   it 'run flow with context arguments ', (done)-> 
     ctx = 
@@ -331,60 +216,69 @@ describe 'flow', ()->
       done()
 
  
-
 describe 'fork', ()->    
-  it 'basic', (done)->
-    forkingFns = []
-    ctx = 
-      cnt : 0
-    for i  in [0...5]
-      forkingFns.push (next)->  
+  it 'basic', (done)-> 
+
+    f = ficent.fork [
+      (ctx, _toss)->  
         ctx.cnt++
-        next()
-    f = ficent.fork forkingFns
-    f (err)->
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+    ]
+    ctx =  cnt : 0 
+    f ctx, (err)->
       assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
   it 'with Err', (done)->
     forkingFns = []
-    ctx = 
-      cnt : 0
-    for i  in [0...5]
-      forkingFns.push (next)->  
+    ctx = cnt : 0
+
+    f = ficent.fork [
+      (ctx, _toss)->  
         ctx.cnt++
-        next new Error 'JUST'
-    f = ficent.fork forkingFns
-    f (err)->
-      assert util.isError err, 'error'
-      assert ctx.cnt is 5 , 'fork count 5 ' 
-      done()
-
-  it 'with arguments', (done)->
-    forkingFns = []
-    ctx = 
-      cnt : 0
-    for i  in [0...5]
-      forkingFns.push (num, next)->  
-        ctx.cnt += num
-        next()
-    f = ficent.fork forkingFns
-    f 5, (err)->
-      assert ctx.cnt is 25 , 'fork count 25 ' 
-      done()
+        _toss new Error 'JUST'
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss new Error 'JUST'
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss new Error 'JUST' 
+    ]
  
-
-  it 'with arguments, no callback', (done)->
+    f ctx, (err)->
+      assert util.isError err, 'error'
+      assert ctx.cnt is 3 , 'fork count 3' 
+      done() 
+ 
+  it 'fork, no callback', (done)->
     forkingFns = []
-    ctx = 
-      cnt : 0
-    for i  in [0...5]
-      forkingFns.push (num, next)->  
-        ctx.cnt += num
-        next()
-    f = ficent.fork forkingFns
-    f 5
-    assert ctx.cnt is 25 , 'fork count 25 ' 
+
+    f = ficent.fork [
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null
+      (ctx, _toss)->  
+        ctx.cnt++
+        _toss null 
+    ]
+    ctx =  cnt : 0 
+    f ctx
+    assert ctx.cnt is 3, 'fork count 3 ' 
     done()
  
 
@@ -426,7 +320,7 @@ describe 'flow  - forkjoin', ()->
   
 
 
-
+ 
 describe 'wrap', ()->
 
   it 'wrap test', (done)->    
@@ -498,15 +392,16 @@ describe 'toss', ()->
     f = ficent.flow [ 
       [
         (toss)-> 
-          toss.b = 7
+          toss.var 'b', 7
           toss()
         (toss)->   
-          toss.a = 9
+          toss.var 'a', 9
           toss()
       ]
       (toss)->
-        toss.c = toss.a * toss.b
-        output = toss
+        debug 'a?, b?', toss.var('a'), toss.var('b')
+        toss.var 'c', toss.var('a') * toss.var('b')
+        # output = toss
         # debug 'when FN 3 ', toss.toss_props()
         toss null
       [
@@ -528,9 +423,12 @@ describe 'toss', ()->
         toss null, toss
     ] 
     f (err, output)->
+      debug '========================'
+      debug 'toss data in fork'
+      if err
+        console.error err
+        console.error err.stack
       try
-        debug '========================'
-        debug 'toss data in fork', err
         for own k, v of arguments.callee
           debug 'kv', k, v
         expect err 
@@ -546,10 +444,11 @@ describe 'toss', ()->
         # assert output.c2 is 126, 'c * 2'
         # assert output.c3 is 189, 'c * 3 '
       catch e 
-        console.log e
+        console.error e
+        console.error e.stack
 
       done()
- 
+  return 
   it 'toss err 1 ', (done)-> 
 
     output = {}
@@ -845,3 +744,120 @@ describe 'ficent complex', ()->
       expect err
         .toEqual null
       done()
+
+
+
+describe 'ficent seq, par', (done)->    
+  # it 'flow ', (done)->  
+  #   callback = (err)-> 
+  #     expect err
+  #       .toEqual null
+  #     # assert not util.isError err, 'no error'
+  #     expect ctx.a 
+  #       .toBeTruthy()
+  #     expect ctx.b
+  #       .toBeTruthy()
+  #     done() 
+  #   ctx = 
+  #     name : 'context base'
+    
+
+  #   ficent.do ctx, [
+  #       func1, 
+  #       func2
+  #     ], callback
+
+  # it 'fork', (done)->
+  #   forkingFns = []
+  #   ctx = 
+  #     cnt : 0
+  #   for i  in [0...5]
+  #     forkingFns.push (next)->  
+  #       ctx.cnt++
+  #       next()
+  #   # f = ficent.fork forkingFns
+  #   callback = (err)->
+  #     assert ctx.cnt is 5 , 'fork count 5 ' 
+  #     done()
+
+  #   ficent.do [forkingFns], callback
+
+  it 'par', (done)->  
+    input = [3, 6, 9]
+    taskFn = ficent.par (num, next)->
+      debug 'par in', num 
+      next null, num * 1.5 
+    taskFn input, (err, results)->
+      debug 'par, callback', arguments
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      expect results
+        .toEqual [4.5, 9, 13.5]
+      done()
+
+  it 'ser', (done)-> 
+    input = [3, 6, 9]
+    results = []
+    taskFn = ficent.ser (num, next)->
+      debug 'ser in', num 
+      results.push num * 1.5
+      next null, num * 2
+    taskFn input, (err, numbers)->
+      debug 'ser, callback', results
+      expect numbers
+        .toEqual [6, 12, 18]
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      done()
+
+  it 'ser2', (done)-> 
+    input = [3, 6, 9]
+    results = []
+    taskFn = ficent.ser (num, next)->
+      debug 'ser in', num 
+      results.push num * 1.5
+      next null, num * 2, num * 10
+    taskFn input, (err, numbers)->
+      debug 'ser, callback', results
+      expect numbers
+        .toEqual [[6, 30], [12, 60], [18, 90]]
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      done()
+
+  it 'setVar', (done)->
+    async_ab = (callback)->
+      callback null, 1, 2 
+    taskFn = ficent [
+      (_toss)->
+        _toss.var 'c', 20
+        async_ab _toss.setVar 'a', 'b'
+      (err, _toss)->
+        expect _toss.var 'a'
+          .toEqual 1 
+        expect _toss.var 'b'
+          .toEqual 2
+        expect _toss.var 'c'
+          .toEqual 20
+        done()
+    ]
+
+    taskFn()
+
+
+describe 'err?', ()->    
+  it 'crypt ', (done)-> 
+      
+
+    md5 = (v)-> require("crypto").createHash("md5").update(v).digest("hex")
+
+    do ficent [
+      (_toss)->
+        fs.lstat 'package.json', _toss.err (err)->
+          _toss null
+      (_toss)->
+        crypto = require 'crypto'
+        salt = md5 crypto.randomBytes(40).readUInt32LE(0)
+        _toss null
+      (err,_toss)->
+
+        debug 'err = ',err
+        done()
+    ]
