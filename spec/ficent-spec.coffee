@@ -216,6 +216,84 @@ describe 'flow', ()->
       done()
 
  
+  it 'goto - skip', (done)-> 
+
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.var 'a', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'b', true
+        _toss.var 'ctx', {cnt: 0 }
+        _toss null
+      (_toss)-> 
+        return _toss.goto 'here'
+      (_toss)-> 
+        _toss.var('ctx').cnt++
+        _toss.var 'c', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'd', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'e', true
+        _toss null
+      'here'
+      (_toss)-> 
+        _toss.var 'g', true
+        _toss null, _toss.var 'ctx'
+    ]
+    # f (req,res,next)
+    f (err, obj)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect obj.cnt
+        .toEqual 0
+      done()
+  
+ 
+  it 'goto - repeat', (done)-> 
+
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.var 'a', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'b', true
+        _toss.var 'ctx', {cnt: 0 }
+        _toss null
+      'here'
+      (_toss)-> 
+        _toss.var('ctx').cnt++
+        _toss.var 'c', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'd', true
+        _toss null
+      (_toss)-> 
+        _toss.var 'e', true
+        _toss null
+      (_toss)-> 
+
+        f = _toss.var 'f'
+        _toss.var 'f', true
+        unless f
+          return _toss.goto 'here'
+        _toss null
+      (_toss)-> 
+        _toss.var 'g', true
+        _toss null, _toss.var 'ctx'
+    ]
+    # f (req,res,next)
+    f (err, obj)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect obj.cnt
+        .toEqual 2
+      done()
+  
 describe 'fork', ()->    
   it 'basic', (done)-> 
 

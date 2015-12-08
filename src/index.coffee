@@ -287,12 +287,17 @@ createSeqFn = (args...)->
       fn = flowFns[fnInx]
       fnInx++ 
 
+      debug 'fnInx', fnInx, fn
+
+      if _isString fn # Label
+        return _call_next_fn err, tossArgs...
+
       if _isArray fn 
         fn = createMuxFn {desc: "#{fn.desc}.fork-wrap"}, fn 
         # fn.desc = "flow.#{fnInx}.fork-wrap"
 
       unless _isFunction fn
-        outCallback new Error 'ficent only accept Function or Array'
+        outCallback new Error 'ficent only accept Function or Array or Label'
         return
       isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
       if err and not isErrorHandlable
