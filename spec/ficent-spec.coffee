@@ -370,10 +370,10 @@ describe 'toss', ()->
     
     f = ficent [ 
       (ctx, c1,c2, toss)-> 
-        toss.tossValue = 9
+        toss.var 'tossValue', 9
         toss()
       (ctx, c1,c2,toss)->   
-        ctx.tossed = toss.tossValue is 9
+        ctx.tossed = toss.var('tossValue') is 9
         toss()
     ]
     # f (req,res,toss)
@@ -407,13 +407,13 @@ describe 'toss', ()->
       [
         (toss)-> 
           # debug 'FN4-1 = ', toss.toss_props() 
-          toss.c2 = toss.c * 2
-          debug 'mk c2', toss.c
+          toss.c2 = toss.var('c') * 2
+          debug 'mk c2', toss.var('c')
           toss()
         (toss)->   
           # debug 'FN4-1 = ', toss.toss_props()
-          toss.c3 = toss.c * 3
-          debug 'mk c3', toss.c
+          toss.c3 = toss.var('c') * 3
+          debug 'mk c3', toss.var('c')
           # l = ''
           # l += "#{k}:#{v},"  for own k, v of toss
 
@@ -434,12 +434,12 @@ describe 'toss', ()->
         expect err 
           .toBe null
 
-        expect output.c
+        expect output.var('c')
           .toEqual 63
         # assert output.c is 63, '= 7 * 9 '
-        expect output.c2
+        expect output.var('c2')
           .toEqual 126
-        expect output.c3
+        expect output.var('c3')
           .toEqual 189
         # assert output.c2 is 126, 'c * 2'
         # assert output.c3 is 189, 'c * 3 '

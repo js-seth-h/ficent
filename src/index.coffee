@@ -46,26 +46,36 @@ _defaultCallbackFn = (err)->
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
-  desc: ()->
+  desc: 'no-name'
 
   _tossable: (_toss)->
     _toss._tossable = true
+
+  _var_read: {}
+  _var_write: {}
   var: (_toss)->
     _toss.var = (name, value)->
-      return _toss[name] unless value 
-      _toss[name] = value
+      # return _toss[name] unless value 
+      # _toss[name] = value 
+      unless value
+        # read
+        value = _toss._var_write[name] or _toss._var_read[name] 
+        return value  
+      else 
+        # write
+        _toss._var_write[name] = value
+
       
   setVar: (_toss)->
     _toss.setVar = (names...)->
       return _toss.err (err, args...)->
-
         for value, inx in args
           n = names[inx]
           if n
-            _toss[n] = value
+            _toss.var n, value
         _toss null
 
-  _args: ()->
+  _args: []
   args: (_toss)->
     _toss.args = ()->
       return _toss._args
@@ -87,6 +97,17 @@ toss_fn_maker =
 
  
 toss_lib =
+  makeTossableFn: (_toss, desc)->
+    return unless _toss 
+    for own k, v of toss_fn_maker
+      if _isFunction v
+        v _toss
+      else 
+        _toss[k] = v
+    # _toss.desc = desc
+    # _toss.toss_props = ()->
+    #   toss.toss_props _toss
+
   tossData : (fn, srcFn...)->
 
     # return unless fn
@@ -101,7 +122,7 @@ toss_lib =
       debug '     copy', fn.desc , '<<', t.desc
       for own prop, val of t
         continue if toss_fn_maker[prop]  
-        fn[prop] = val
+        fn.var prop, val
         debug '         ' + prop
     return
 
@@ -128,14 +149,6 @@ toss_lib =
   #     debug '         ' + prop
   #     # debug 'assign', prop, '=', val
   #   return
-
-  makeTossableFn: (_toss, desc)->
-    return unless _toss 
-    for own k, fn of toss_fn_maker
-      fn _toss
-    _toss.desc = desc
-    # _toss.toss_props = ()->
-    #   toss.toss_props _toss
 
 
 
