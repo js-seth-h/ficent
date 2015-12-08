@@ -282,8 +282,25 @@ describe 'fork', ()->
     assert ctx.cnt is 3, 'fork count 3 ' 
     done()
  
+  it 'param', (done)-> 
 
-
+    f = ficent {desc: 'fx'}, [
+      [ 
+        (ctx, _toss)->  
+          _toss null, 1, 2
+        (ctx, _toss)->
+          _toss null, 'a', 'b'
+      ]
+      (ctx, _toss)->
+        debug 'param', _toss.args()
+        _toss null, _toss.args()...
+    ]
+    f (err, result )->
+      # assert ctx.cnt is 5 , 'fork count 5 ' 
+      expect result
+        .toEqual [ [1,2], ['a', 'b']]
+      done()
+ 
 describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
     ctx = {}
@@ -729,36 +746,35 @@ describe 'double callback defence', ()->
 
 
 
-describe 'ficent complex', ()->    
+# describe 'ficent complex', ()->    
 
-  it ' seq - mux - seq ', (done)-> 
+#   it ' seq - mux - seq ', (done)-> 
       
-    debug '========================================================'
-    debug ' ficent complex'
-    f = ficent [
-      (param, _toss)->
+#     debug '========================================================'
+#     debug ' ficent complex'
+#     f = ficent [
+#       (param, _toss)->
+#         # debug 'F1', arguments
+#         _toss null, 1
+#       [
+#         (param, _toss)->
 
-        debug 'F1', arguments
-        _toss null, 1
-      [
-        (param, _toss)->
-
-          debug 'F2', arguments
-          _toss null, 2
-        (param, _toss)->
-          debug 'F3', arguments
-          _toss null, 3
-      ]
-      (err, param, _toss)->
-        debug 'F4', arguments
-        _toss null, 4
-    ]
+#           # debug 'F2', arguments
+#           _toss null, 2
+#         (param, _toss)->
+#           # debug 'F3', arguments
+#           _toss null, 3
+#       ]
+#       (err, param, _toss)->
+#         # debug 'F4', arguments
+#         _toss null, 4
+#     ]
 
 
-    f {}, (err, param, _toss)->
-      expect err
-        .toEqual null
-      done()
+#     f {}, (err, param, _toss)->
+#       expect err
+#         .toEqual null
+#       done()
 
 
 

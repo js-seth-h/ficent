@@ -317,12 +317,10 @@ createSeqFn = (args...)->
         if called is true
           unless err
             brokenErr = new Error 'toss is called twice.' 
-            # fnInx = finx
             _call_next_fn brokenErr
           else
             _call_next_fn err 
           return 
-          # return 
         called = true
 
         # debug  '_call_next_fn', '<', 'tmpCB ', finx
@@ -332,6 +330,11 @@ createSeqFn = (args...)->
 
       # debug 'tmpCB ', finx, '<', '_call_next_fn'
       toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
+
+      cb_callcheck.goto = (label, args...)->
+        fnInx = flowFns.indexOf label
+        _call_next_fn null, args...
+
       return cb_callcheck
 
     _call_next_fn = (err, tossArgs...)->
