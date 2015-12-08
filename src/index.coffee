@@ -265,7 +265,10 @@ createSeqFn = (args...)->
       toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
 
       cb_callcheck.goto = (label, args...)->
-        fnInx = flowFns.indexOf label
+        inx = flowFns.indexOf label
+        if inx < 0 
+          return throw new Error 'Failed to goto ' + label
+        fnInx = inx 
         _call_next_fn null, args...
 
       return cb_callcheck
