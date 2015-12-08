@@ -125,18 +125,9 @@ toss_lib =
 
     if _toss.desc is 'no-named-toss'
       _toss.desc = desc
+ 
 
-    # debug 'set Desc', '1', _toss.desc ,'2', desc , '3', 'no-named-toss'
-    # _toss.desc = _toss.desc or desc or 'no-named-toss'
-    # _toss.toss_props = ()->
-    #   toss.toss_props _toss
-
-  tossData : (fn, srcFns...)->
-
-    # return unless fn
-
-    # debug '-----------------------------------------------------'
-    # debug 'toss data', fn.desc , '<<', srcFn.map((x)-> x.desc).join ','
+  tossData : (fn, srcFns...)-> 
 
     return if fn._tossable isnt true
 
@@ -148,51 +139,9 @@ toss_lib =
 
       for key, inx in srcFn.vars()
         fn.const key, srcFn.var key
-
-      # for own prop, val of t
-      #   continue if toss_fn_maker.hasOwnProperty prop  
-      #   fn.var prop, val
-      #   debug '         ', prop, val
+ 
     return
-
-  # assignToFrom: (fn, srcFn)->
-  #   # debug '-----------------------------------------------------'
-  #   srcFn_name = srcFn.desc or srcFn
-  #   fn_name  = fn.desc or fn
-  #   debug 'assignToFrom', fn_name , '<<', srcFn_name 
-
-  #   if fn._tossable isnt true
-  #     throw new Error 'fn._tossable'
-  #     return 
-  #   if srcFn._tossable isnt true
-  #     throw new Error 'srcFn._tossable'
-  #     return 
-  #   debug '     copy', fn.desc , '<<', srcFn.desc
-
-  #   # for t in srcFn
-  #     # debug ' < ', toss.toss_props t
-  #   for own prop, val of srcFn
-  #     continue if toss_fn_maker[prop] 
-  #     # continue if prop is 'toss_props'
-  #     fn[prop] = val
-  #     debug '         ' + prop
-  #     # debug 'assign', prop, '=', val
-  #   return
-
-
-
-  # toss_props: (fn)-> 
-  #   l = {}
-  #   for own prop, val of fn
-  #     continue if prop is 'err'
-  #     continue if prop is 'toss_props'
-  #     l[prop] = val
-  #   return l
-    # return require('util').inspect(l)
-    # return JSON.stringify l, null, 2 
-  # print: (fn)->
-  #   debug 'toss.print', toss.toss_props fn
-
+ 
 _validating = (fns, prefix)->
   # _valid = (arr, prefix)->
   for item, inx in fns
@@ -210,22 +159,7 @@ createMuxFn = (muxArgs...)->
     [fns] = muxArgs
   else 
     [hint, fns] = muxArgs
-
-    # return flow
-
-  # _validating = (fns, prefix='fork')->
-  #   # _valid = (arr, prefix)->
-  #   # debug '_validating', prefix
-  #   for item, inx in fns
-  #     # item.desc = "#{prefix}.#{inx}" unless item.desc
-  #     debug item.desc, item
-  #     if _isArray item
-  #       _validating item, item.desc
-  #     else if _isFunction item
-  #     else if _isString item
-  #     else
-  #       throw new Error 'item of ficent flow must be function or array'  
-    # _valid fns, prefix
+ 
 
   newFn = (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
@@ -305,8 +239,7 @@ createSeqFn = (args...)->
     brokenErr = null
 
     [startErr, args, outCallback] = _startArg args... 
-    # debug 'createSeqFn, startFn *********************************************'
-    # debug 'toss.print', toss.toss_props  outCallback
+
     debug 'seq    ', startFn.desc, '->', outCallback.desc 
     contextArgs = args
 
@@ -352,8 +285,6 @@ createSeqFn = (args...)->
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
-      # fn.desc = "flow.#{fnInx}"
-      # debug 'createSeqFn', 'toss', fnInx
       fnInx++ 
 
       if _isArray fn 
@@ -389,8 +320,6 @@ createSeqFn = (args...)->
   # debug 'hint ===', hint
   # debug 'startFn.desc', startFn.desc 
   for own k, v of hint
-    # debug 'set Hint kv', k, v
-    # startFn[k] = v 
     Object.defineProperty startFn, k, {value: v, writable: true } 
 
 
@@ -503,11 +432,7 @@ ficent.parallel = (flows)->
         taskFn args..., next
     f = ficent.fork fns 
     f callback
-
-# ficent.do = (inputs..., flows, callback)->
-#   f = ficent.flow flows
-#   f inputs..., callback
-
+ 
 
 
 module.exports = exports = ficent
