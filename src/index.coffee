@@ -136,10 +136,13 @@ toss_lib =
       debug 'toss-data', fn.desc , '<<', srcFn.desc
       # fn._args = srcFn._args
       fn.setArgs srcFn.args()
-
       for key, inx in srcFn.vars()
         fn.const key, srcFn.var key
- 
+
+      for own k, v of srcFn 
+        continue if toss_fn_maker.hasOwnProperty k
+        fn[k] = v 
+
     return
  
 _validating = (fns, prefix)->
