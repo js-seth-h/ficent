@@ -323,15 +323,17 @@ describe 'toss function', ()->
   it 'cross ficent', (done)-> 
     ctx = {}
     g = ficent.flow (_toss)->
-      _toss.setValue 112
-      _toss null
+      # _toss.setValue 112
+      _toss null, 112
     f = ficent.flow [ 
       (_toss)-> 
         _toss.setValue = (x)->
           ctx.x = x
         _toss null
       (_toss)->
-        g _toss
+        g (err, num)->
+          _toss.setValue num
+          _toss null
       (_toss)-> 
         _toss null
     ]
@@ -347,17 +349,16 @@ describe 'toss function', ()->
   it 'cross ficent with toss.err', (done)-> 
     ctx = {}
     g = ficent.flow (_toss)->
-      _toss.setValue 112
-      _toss null
+      _toss null, 112
     f = ficent.flow [ 
       (_toss)-> 
         _toss.setValue = (x)->
           ctx.x = x
         _toss null
       (_toss)->
-        g _toss.err (err)-> 
-          debug 'with err', err
-          _toss err
+        g _toss.err (err, num)->
+          _toss.setValue num
+          _toss null
       (_toss)-> 
         _toss null
     ]
@@ -371,14 +372,9 @@ describe 'toss function', ()->
       done()
   it 'cross ficent with toss.setVar', (done)-> 
     ctx = {}
-    g = ficent.flow (_toss)->
-      _toss.setValue 112
+    g = ficent.flow (_toss)-> 
       _toss null, 'g-string'
-    f = ficent.flow [ 
-      (_toss)-> 
-        _toss.setValue = (x)->
-          ctx.x = x
-        _toss null
+    f = ficent.flow [  
       (_toss)->
         g _toss.setVar 'g-value'
       (_toss)-> 
@@ -388,69 +384,67 @@ describe 'toss function', ()->
     f (err, g_value)-> 
       debug 'err ', err
       expect err
-        .toEqual null
-      expect ctx.x
-        .toEqual 112
+        .toEqual null 
       expect g_value
         .toEqual 'g-string'
       done()
 
-  it 'cross ficent with ficent.serial', (done)-> 
-    ctx = {}
-    f = ficent.flow {desc:'ser-wrap' }, [ 
-      (_toss)-> 
-        _toss.setValue = (x)->
-          ctx.x = x
-        _toss null
-      (_toss)->
-        _fn  = ficent.ser {desc:'ser-test'}, [ (x, _toss)->
-          _toss.setValue x
-          _toss.getMulti = ()->
-            return x * x 
-          _toss null 
-        ]
-        _fn [200], _toss
-      (_toss)->
-        _toss null, _toss.getMulti()
-    ]
-    # f (req,res,next)
-    f (err, m )-> 
-      debug 'err ', err
-      expect err
-        .toEqual null
-      expect ctx.x
-        .toEqual 200
-      expect m
-        .toEqual 200 * 200 
-      done()
-  it 'cross ficent with ficent.parallel', (done)-> 
-    ctx = {}
-    f = ficent.flow {desc:'par-wrap' }, [ 
-      (_toss)-> 
-        _toss.setValue = (x)->
-          ctx.x = x
-        _toss null
-      (_toss)->
-        _fn  = ficent.par {desc:'par-test'}, [ (x, _toss)->
-          _toss.setValue x
-          _toss.getMulti = ()->
-            return x * x 
-          _toss null 
-        ]
-        _fn [200], _toss
-      (_toss)->
-        _toss null, _toss.getMulti()
-    ]
-    # f (req,res,next)
-    f (err, m )-> 
-      debug 'err ', err
-      expect err
-        .toEqual null
-      expect ctx.x
-        .toEqual 200
-      expect m
-        .toEqual 200 * 200 
-      done()
+  # it 'cross ficent with ficent.serial', (done)-> 
+  #   ctx = {}
+  #   f = ficent.flow {desc:'ser-wrap' }, [ 
+  #     (_toss)-> 
+  #       _toss.setValue = (x)->
+  #         ctx.x = x
+  #       _toss null
+  #     (_toss)->
+  #       _fn  = ficent.ser {desc:'ser-test'}, [ (x, _toss)->
+  #         _toss.setValue x
+  #         _toss.getMulti = ()->
+  #           return x * x 
+  #         _toss null 
+  #       ]
+  #       _fn [200], _toss
+  #     (_toss)->
+  #       _toss null, _toss.getMulti()
+  #   ]
+  #   # f (req,res,next)
+  #   f (err, m )-> 
+  #     debug 'err ', err
+  #     expect err
+  #       .toEqual null
+  #     expect ctx.x
+  #       .toEqual 200
+  #     expect m
+  #       .toEqual 200 * 200 
+  #     done()
+  # it 'cross ficent with ficent.parallel', (done)-> 
+  #   ctx = {}
+  #   f = ficent.flow {desc:'par-wrap' }, [ 
+  #     (_toss)-> 
+  #       _toss.setValue = (x)->
+  #         ctx.x = x
+  #       _toss null
+  #     (_toss)->
+  #       _fn  = ficent.par {desc:'par-test'}, [ (x, _toss)->
+  #         _toss.setValue x
+  #         _toss.getMulti = ()->
+  #           return x * x 
+  #         _toss null 
+  #       ]
+  #       _fn [200], _toss
+  #     (_toss)->
+  #       _toss null, _toss.getMulti()
+  #   ]
+  #   # f (req,res,next)
+  #   f (err, m )-> 
+  #     debug 'err ', err
+  #     expect err
+  #       .toEqual null
+  #     expect ctx.x
+  #       .toEqual 200
+  #     expect m
+  #       .toEqual 200 * 200 
+  #     done()
 
 describe 'fork', ()->    
   it 'basic', (done)-> 

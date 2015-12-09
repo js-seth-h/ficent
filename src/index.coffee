@@ -182,7 +182,7 @@ createMuxFn = (muxArgs...)->
       cbIn = join.in()
       debug 'calling  ', flow.desc, '->', cbIn.desc
       toss_lib.makeTossableFn cbIn, "#{flow.desc}.callback"
-      toss_lib.tossData cbIn, outCallback
+      # toss_lib.tossData cbIn, outCallback
       # flow.desc = "fork.#{inx}"
       flow args..., cbIn
 
@@ -191,7 +191,7 @@ createMuxFn = (muxArgs...)->
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or newFn
-      toss_lib.tossData outCallback, _insideCb
+      # toss_lib.tossData outCallback, _insideCb
       outCallback err, args...
 
     toss_lib.makeTossableFn _insideCb, "#{newFn.desc}.before-outcallback"
@@ -290,7 +290,7 @@ createSeqFn = (args...)->
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
         # debug 'outCallback',  '<', '_call_next_fn'
-        toss_lib.tossData outCallback, _call_next_fn
+        # toss_lib.tossData outCallback, _call_next_fn
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
@@ -329,7 +329,7 @@ createSeqFn = (args...)->
     # debug '_call_next_fn',  '<', 'outCallback'
 
     debug 'seq    ', startFn.desc, '->', outCallback.desc 
-    toss_lib.tossData _call_next_fn, outCallback
+    # toss_lib.tossData _call_next_fn, outCallback
     _call_next_fn startErr, args... 
   # startFn.hint = hint
 
@@ -365,7 +365,7 @@ createJoin = (strict = true)->
     if allFnished and outFn
       err = _unifyErrors errors
       # results.obj = resultsObj
-      toss_lib.tossData outFn, inFns...
+      # toss_lib.tossData outFn, inFns...
       outFn err, results
 
   fns = 
@@ -435,11 +435,11 @@ ficent.series = (args...)->
     f = ficent.flow {desc: "series-of.#{taskFn.desc}"}, fns
 
     seriesCallback = (err)->
-      toss_lib.tossData outCallback, seriesCallback
+      # toss_lib.tossData outCallback, seriesCallback
       outCallback err, results_array
 
     toss_lib.makeTossableFn seriesCallback, 'series-internal-callback'
-    toss_lib.tossData seriesCallback, outCallback
+    # toss_lib.tossData seriesCallback, outCallback
     f seriesCallback
  
 ficent.par = 
