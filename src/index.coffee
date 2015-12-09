@@ -110,7 +110,8 @@ toss_fn_maker =
           nextFn errMayBe, args...
         catch err
           _toss err
-
+      toss_lib.makeTossableFn cb, "#{_toss}.desc.err"
+      toss_lib.tossData cb, _toss
       return  cb
 
  

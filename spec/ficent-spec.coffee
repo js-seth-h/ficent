@@ -320,6 +320,82 @@ describe 'toss function', ()->
         .toEqual 10
       done()
 
+  it 'cross ficent', (done)-> 
+    ctx = {}
+    g = ficent.flow (_toss)->
+      _toss.setValue 112
+      _toss null
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.setValue = (x)->
+          ctx.x = x
+        _toss null
+      (_toss)->
+        g _toss
+      (_toss)-> 
+        _toss null
+    ]
+    # f (req,res,next)
+    f (err)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect ctx.x
+        .toEqual 112
+      done()
+
+  it 'cross ficent with toss.err', (done)-> 
+    ctx = {}
+    g = ficent.flow (_toss)->
+      _toss.setValue 112
+      _toss null
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.setValue = (x)->
+          ctx.x = x
+        _toss null
+      (_toss)->
+        g _toss.err (err)-> 
+          debug 'with err', err
+          _toss err
+      (_toss)-> 
+        _toss null
+    ]
+    # f (req,res,next)
+    f (err)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect ctx.x
+        .toEqual 112
+      done()
+  it 'cross ficent with toss.setVar', (done)-> 
+    ctx = {}
+    g = ficent.flow (_toss)->
+      _toss.setValue 112
+      _toss null, 'g-string'
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.setValue = (x)->
+          ctx.x = x
+        _toss null
+      (_toss)->
+        g _toss.setVar 'g-value'
+      (_toss)-> 
+        _toss null, _toss.var 'g-value'
+    ]
+    # f (req,res,next)
+    f (err, g_value)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect ctx.x
+        .toEqual 112
+      expect g_value
+        .toEqual 'g-string'
+      done()
+
+
 describe 'fork', ()->    
   it 'basic', (done)-> 
 
