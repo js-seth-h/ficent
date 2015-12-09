@@ -395,6 +395,62 @@ describe 'toss function', ()->
         .toEqual 'g-string'
       done()
 
+  it 'cross ficent with ficent.serial', (done)-> 
+    ctx = {}
+    f = ficent.flow {desc:'ser-wrap' }, [ 
+      (_toss)-> 
+        _toss.setValue = (x)->
+          ctx.x = x
+        _toss null
+      (_toss)->
+        _fn  = ficent.ser {desc:'ser-test'}, [ (x, _toss)->
+          _toss.setValue x
+          _toss.getMulti = ()->
+            return x * x 
+          _toss null 
+        ]
+        _fn [200], _toss
+      (_toss)->
+        _toss null, _toss.getMulti()
+    ]
+    # f (req,res,next)
+    f (err, m )-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect ctx.x
+        .toEqual 200
+      expect m
+        .toEqual 200 * 200 
+      done()
+  it 'cross ficent with ficent.parallel', (done)-> 
+    ctx = {}
+    f = ficent.flow {desc:'par-wrap' }, [ 
+      (_toss)-> 
+        _toss.setValue = (x)->
+          ctx.x = x
+        _toss null
+      (_toss)->
+        _fn  = ficent.par {desc:'par-test'}, [ (x, _toss)->
+          _toss.setValue x
+          _toss.getMulti = ()->
+            return x * x 
+          _toss null 
+        ]
+        _fn [200], _toss
+      (_toss)->
+        _toss null, _toss.getMulti()
+    ]
+    # f (req,res,next)
+    f (err, m )-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect ctx.x
+        .toEqual 200
+      expect m
+        .toEqual 200 * 200 
+      done()
 
 describe 'fork', ()->    
   it 'basic', (done)-> 

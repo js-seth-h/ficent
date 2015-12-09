@@ -49,6 +49,7 @@ _defaultCallbackFn = (err)->
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
+  goto: null
   desc: (_toss)->
     unless _toss.desc
       _toss.desc = 'no-named-toss'
@@ -107,10 +108,11 @@ toss_fn_maker =
         if _isError errMayBe # Stupid Proof
           return _toss errMayBe, args...
         try 
+          toss_lib.tossData _toss, cb
           nextFn errMayBe, args...
         catch err
           _toss err
-      toss_lib.makeTossableFn cb, "#{_toss}.desc.err"
+      toss_lib.makeTossableFn cb, "#{_toss.desc}.err"
       toss_lib.tossData cb, _toss
       return  cb
 
@@ -142,6 +144,7 @@ toss_lib =
 
       for own k, v of srcFn 
         continue if toss_fn_maker.hasOwnProperty k
+        debug '     ', 'prop:', k
         fn[k] = v 
 
     return
@@ -177,10 +180,10 @@ createMuxFn = (muxArgs...)->
     join = createJoin()
     forkingFns.forEach (flow, inx)->
       cbIn = join.in()
+      debug 'calling  ', flow.desc, '->', cbIn.desc
       toss_lib.makeTossableFn cbIn, "#{flow.desc}.callback"
       toss_lib.tossData cbIn, outCallback
       # flow.desc = "fork.#{inx}"
-      debug 'calling  ', flow.desc, '->', cbIn.desc
       flow args..., cbIn
 
     _insideCb = (err, args...)->
@@ -244,13 +247,12 @@ createSeqFn = (args...)->
 
     [startErr, args, outCallback] = _startArg args... 
 
-    debug 'seq    ', startFn.desc, '->', outCallback.desc 
+
     contextArgs = args
 
     _createTmpCB = (fn_desc)->
       called = false
       cb_callcheck = (err, args...)->
-        # debug cb_callcheck.desc, 'returned', err, args...
         if called is true
           unless err
             brokenErr = new Error 'toss is called twice.' 
@@ -261,8 +263,8 @@ createSeqFn = (args...)->
         called = true
 
         # debug  '_call_next_fn', '<', 'tmpCB ', finx
+        debug 'seq-done ', cb_callcheck.desc, 'with', args...
         toss_lib.tossData _call_next_fn, cb_callcheck 
-        debug 'returned ', cb_callcheck.desc, 'with', args...
         _call_next_fn err, args... 
 
       # debug 'tmpCB ', finx, '<', '_call_next_fn'
@@ -294,7 +296,7 @@ createSeqFn = (args...)->
       fn = flowFns[fnInx]
       fnInx++ 
 
-      debug 'fnInx', fnInx, fn
+      # debug 'fnInx', fnInx, fn
 
       if _isString fn # Label
         return _call_next_fn err, tossArgs...
@@ -312,9 +314,9 @@ createSeqFn = (args...)->
 
       try
         cb = _createTmpCB fn.desc
+        debug 'calling  ', fn.desc, '->', cb.desc
         toss_lib.tossData cb, _call_next_fn 
 
-        debug 'calling  ', fn.desc, '->', cb.desc
         if isErrorHandlable
           fn err, contextArgs..., cb
         else
@@ -325,6 +327,8 @@ createSeqFn = (args...)->
 
     toss_lib.makeTossableFn _call_next_fn, "#{startFn.desc}.internal-next"
     # debug '_call_next_fn',  '<', 'outCallback'
+
+    debug 'seq    ', startFn.desc, '->', outCallback.desc 
     toss_lib.tossData _call_next_fn, outCallback
     _call_next_fn startErr, args... 
   # startFn.hint = hint
@@ -411,9 +415,9 @@ ficent.flow = createSeqFn # 함수 직렬 수행
 ficent.fork = createMuxFn # 함수 병렬 수행
 
 ficent.ser =
-ficent.series = (flows)->
-  taskFn = ficent flows
-  return (input_array, callback)->
+ficent.series = (args...)->
+  taskFn = ficent args...
+  return (input_array, outCallback)->
     results_array = []
     fns = input_array.map (args)->
       unless _isArray args
@@ -421,29 +425,35 @@ ficent.series = (flows)->
       # debug 'mk Closure Fn with ', args
       return (_toss)->
         # debug 'inside par', args
+        # debug 'call series - each task', '_toss._tossable?', _toss._tossable
         taskFn args..., _toss.err (err, results_values...)->
           if results_values.length is 1
             results_values = results_values[0]
           results_array.push results_values
           _toss err
 
-    f = ficent.flow fns
-    f (err)->
-      callback err, results_array
+    f = ficent.flow {desc: "series-of.#{taskFn.desc}"}, fns
+
+    seriesCallback = (err)->
+      toss_lib.tossData outCallback, seriesCallback
+      outCallback err, results_array
+
+    toss_lib.makeTossableFn seriesCallback, 'series-internal-callback'
+    toss_lib.tossData seriesCallback, outCallback
+    f seriesCallback
  
 ficent.par = 
-ficent.parallel = (flows)->
-  taskFn = ficent flows
-  return (input_array, callback)->
+ficent.parallel = (args...)-> 
+  taskFn = ficent args...
+  return (input_array, outCallback)->
     fns = input_array.map (args)->
       unless _isArray args
         args = [args]
       # debug 'mk Closure Fn with ', args
-      return (next)->
-        # debug 'inside par', args
+      return (next)-> 
         taskFn args..., next
     f = ficent.fork fns 
-    f callback
+    f outCallback
  
 
 
