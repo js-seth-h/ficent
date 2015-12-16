@@ -49,6 +49,7 @@ _defaultCallbackFn = (err)->
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
+  return: null
   goto: null
   desc: (_toss)->
     unless _toss.desc
@@ -252,13 +253,12 @@ createSeqFn = (args...)->
 
     _createTmpCB = (fn_desc)->
       called = false
+
+
       cb_callcheck = (err, args...)->
         if called is true
-          unless err
-            brokenErr = new Error 'toss is called twice.' 
-            _call_next_fn brokenErr
-          else
-            _call_next_fn err 
+          err = err or new Error 'toss is called twice.' 
+          _call_next_fn err 
           return 
         called = true
 
@@ -270,12 +270,23 @@ createSeqFn = (args...)->
       # debug 'tmpCB ', finx, '<', '_call_next_fn'
       toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
 
+      cb_callcheck.done =
+      cb_callcheck.return = (args...)->
+        fnInx = flowFns.length
+        cb_callcheck args...
+
       cb_callcheck.goto = (label, args...)->
-        inx = flowFns.indexOf label
-        if inx < 0 
-          return throw new Error 'Failed to goto ' + label
+        if label is 'first'
+          inx = 0 
+        if label is 'last'
+          inx = flowFns.length - 1 
+        else
+          inx = flowFns.indexOf label
+          if inx < 0 
+            return throw new Error 'Failed to goto ' + label
+
         fnInx = inx 
-        _call_next_fn null, args...
+        cb_callcheck null, args...
 
       return cb_callcheck
 
@@ -285,6 +296,7 @@ createSeqFn = (args...)->
 
       _call_next_fn.setArgs tossArgs
       if err
+        err.msg = err.toString()
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or startFn 
       if flowFns.length is fnInx

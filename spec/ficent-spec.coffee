@@ -216,7 +216,7 @@ describe 'flow', ()->
       done()
 
  
-describe 'goto', ()->
+describe 'goto, return', ()->
   it 'goto - skip', (done)-> 
 
     f = ficent.flow [ 
@@ -294,6 +294,26 @@ describe 'goto', ()->
       expect obj.cnt
         .toEqual 2
       done()
+  
+ 
+  it 'return', (done)-> 
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.var 'a', 99
+        _toss.return null, _toss
+      (_toss)-> 
+        _toss.var 'a', 88
+        _toss null, _toss
+    ]
+    # f (req,res,next)
+    f (err, obj)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect obj.var('a')
+        .toEqual 99
+      done()
+
   
 describe 'toss function', ()->
   it 'function', (done)-> 
