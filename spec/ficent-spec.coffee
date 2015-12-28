@@ -13,7 +13,6 @@ func2 = (ctx, next)->
   ctx.b = true
   next()
 
-
 describe 'flow', ()->    
   it 'run flow with context arguments ', (done)-> 
     ctx = 
@@ -675,12 +674,13 @@ describe 'toss', ()->
         toss null
       [
         (toss)-> 
-          # debug 'FN4-1 = ', toss.toss_props() 
+          debug 'FN4-1 = ', toss.vars_kv() 
+          # debug 'a?, b?', toss.var('a'), toss.var('b')
           toss.var 'c2', toss.var('c') * 2
           debug 'mk c2', toss.var('c')
           toss()
         (toss)->   
-          # debug 'FN4-1 = ', toss.toss_props()
+          debug 'FN4-1 = ', toss.vars_kv()
           toss.var 'c3', toss.var('c') * 3
           debug 'mk c3', toss.var('c')
           # l = ''
@@ -716,8 +716,7 @@ describe 'toss', ()->
         console.error e
         console.error e.stack
 
-      done()
-
+      done() 
   it 'toss err 1 ', (done)-> 
 
     output = {}
@@ -805,13 +804,13 @@ describe 'toss', ()->
       done()
 
   it 'double toss', (done)->
-    g = ficent [
+    g = ficent {desc: 'g'}, [
       (_toss)->
         debug 'double toss', 'g'
         _toss.var 'g', 12
         _toss null
     ]
-    f = ficent [
+    f = ficent {desc: 'f'}, [
       (_toss)->
         debug 'double toss', 'f.a'
         _toss.var 'a', 11
@@ -1142,3 +1141,23 @@ describe 'err?', ()->
         debug 'err = ',err
         done()
     ]
+
+describe 'isolate', ()->
+
+  it 'run isolate', (done)->
+
+    a = ficent (_toss)->
+      _toss.var 'a', 9
+      _toss.aa = 9 
+      _toss null
+    a ()->
+    b = ficent (_toss)->
+      a = _toss.var 'a'
+      debug '_toss.aa', _toss.aa
+      expect a 
+        .not.toEqual 9
+      expect _toss.aa
+        .not.toEqual 9
+        done()
+      _toss null
+    b ()->

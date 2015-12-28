@@ -49,6 +49,7 @@ _defaultCallbackFn = (err)->
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
 toss_fn_maker =
+  done: null
   return: null
   goto: null
   desc: (_toss)->
@@ -58,8 +59,12 @@ toss_fn_maker =
   _tossable: (_toss)->
     _toss._tossable = true
 
-  _var_read: {}
-  _var_write: {}
+  # _var_read: {}
+  # _var_write: {}
+  _var_read: (_toss)->
+    _toss._var_read = {}
+  _var_write: (_toss)->
+    _toss._var_write = {}
   const: (_toss)->
     _toss.const = (name, value)->
       _toss._var_read[name] = value
@@ -116,6 +121,12 @@ toss_fn_maker =
       toss_lib.makeTossableFn cb, "#{_toss.desc}.err"
       toss_lib.tossData cb, _toss
       return  cb
+  vars_kv: (_toss)->
+    _toss.vars_kv = ()->
+      kv = {}
+      for k in _toss.vars()
+        kv[k] = _toss.var k
+      return kv 
 
  
 toss_lib =
@@ -133,19 +144,24 @@ toss_lib =
 
   tossData : (fn, srcFns...)-> 
 
-    return if fn._tossable isnt true
+    if fn._tossable isnt true
+      debug 'dest is not tossable', fn.desc
+      return 
 
     for srcFn in srcFns
-      continue if srcFn._tossable isnt true
+      if srcFn._tossable isnt true
+        debug 'src is not tossable', srcFn.desc
+        continue
       debug 'toss-data', fn.desc , '<<', srcFn.desc
       # fn._args = srcFn._args
       fn.setArgs srcFn.args()
       for key, inx in srcFn.vars()
         fn.const key, srcFn.var key
+        debug '     ', 'var :', key, srcFn.var key
 
       for own k, v of srcFn 
         continue if toss_fn_maker.hasOwnProperty k
-        debug '     ', 'prop:', k
+        # debug '     ', 'prop:', k
         fn[k] = v 
 
     return
@@ -161,38 +177,93 @@ _validating = (fns, prefix)->
     else if _isString item
     else
       throw new Error 'item of ficent flow must be function or array'  
+
+createJoin = (strict = true)->
+  errors = []
+  results = []
+  finished = [] 
+  inFns = []
+  outFn = undefined
+
+  _unifyErrors = (errors)->
+    errs = errors.filter (err)-> err 
+    error = undefined
+    if errs.length > 0
+      error = errs[0]
+      error.errors = errors
+    return error  
+
+  callOut = ()->   
+    allFnished = finished.every (v)-> v
+    if allFnished and outFn
+      err = _unifyErrors errors
+      # results.obj = resultsObj
+      debug 'join done'
+      # toss_lib.tossData outFn, inFns...
+      outFn err, results
+
+  fns = 
+    in :(varName = null)->
+      varName = varName
+      inx = errors.length
+      errors.push undefined
+      results.push undefined
+      finished.push false
+ 
+      _cb_forked = (err, values...)->
+        throw new Error 'should call `callback` once' if finished[inx] and strict
+        errors[inx] = err
+        values = values[0] if values.length is 1
+        results[inx] = values
+        if varName
+          results[varName] = values
+        finished[inx] = true
+
+        callOut()
+      # toss_lib.makeTossableFn _cb_forked, "join.callback.#{inx}.(#{varName})"
+      inFns.push _cb_forked
+      return _cb_forked
+    out: (fn)->
+      outFn = fn
+      callOut()
+  return fns
+
 createMuxFn = (muxArgs...)->
   hint = undefined
   if muxArgs.length is 1
     [fns] = muxArgs
   else 
     [hint, fns] = muxArgs
- 
-
+  
   newFn = (args..., outCallback)-> 
     if typeof outCallback isnt 'function'
       args.push outCallback
-      outCallback = _defaultCallbackFn
-    # else 
-      # toss_lib.makeTossableFn outCallback, "#{newFn.desc}.outcallback"
-
+      outCallback = _defaultCallbackFn 
 
     debug 'mux    ', newFn.desc, '->', outCallback.desc 
     join = createJoin()
     forkingFns.forEach (flow, inx)->
       cbIn = join.in()
-      debug 'calling  ', flow.desc, '->', cbIn.desc
-      toss_lib.makeTossableFn cbIn, "#{flow.desc}.callback"
+
+      _forkedEnd = (err, values...)-> 
+        # if hint.tossOut
+        debug '_forkedEnd', _forkedEnd.desc
+        toss_lib.tossData outCallback, _forkedEnd
+        cbIn err, values...
+
+      toss_lib.makeTossableFn _forkedEnd, "#{flow.desc}.callback"
+      debug 'calling M', flow.desc, '---->', _forkedEnd.desc
+      toss_lib.tossData _forkedEnd, outCallback
       # toss_lib.tossData cbIn, outCallback
       # flow.desc = "fork.#{inx}"
-      flow args..., cbIn
+      flow args..., _forkedEnd
 
     _insideCb = (err, args...)->
-      # debug 'fork _insideCb', err, args
+      debug 'mux done', err, args
       if err
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or newFn
-      # toss_lib.tossData outCallback, _insideCb
+
       outCallback err, args...
 
     toss_lib.makeTossableFn _insideCb, "#{newFn.desc}.before-outcallback"
@@ -302,7 +373,8 @@ createSeqFn = (args...)->
       if flowFns.length is fnInx
         # debug ' - assign to outCallback'
         # debug 'outCallback',  '<', '_call_next_fn'
-        # toss_lib.tossData outCallback, _call_next_fn
+        # if hint and hint.tossOut
+        toss_lib.tossData outCallback, _call_next_fn
         return outCallback err, tossArgs... #  contextArgs...
 
       fn = flowFns[fnInx]
@@ -326,7 +398,7 @@ createSeqFn = (args...)->
 
       try
         cb = _createTmpCB fn.desc
-        debug 'calling  ', fn.desc, '->', cb.desc
+        debug 'calling  ', fn.desc, '---->', cb.desc
         toss_lib.tossData cb, _call_next_fn 
 
         if isErrorHandlable
@@ -341,7 +413,7 @@ createSeqFn = (args...)->
     # debug '_call_next_fn',  '<', 'outCallback'
 
     debug 'seq    ', startFn.desc, '->', outCallback.desc 
-    # toss_lib.tossData _call_next_fn, outCallback
+    toss_lib.tossData _call_next_fn, outCallback
     _call_next_fn startErr, args... 
   # startFn.hint = hint
 
@@ -357,54 +429,6 @@ createSeqFn = (args...)->
   return startFn
  
  
-createJoin = (strict = true)->
-  errors = []
-  results = []
-  finished = [] 
-  inFns = []
-  outFn = undefined
-
-  _unifyErrors = (errors)->
-    errs = errors.filter (err)-> err 
-    error = undefined
-    if errs.length > 0
-      error = errs[0]
-      error.errors = errors
-    return error  
-
-  callOut = ()->   
-    allFnished = finished.every (v)-> v
-    if allFnished and outFn
-      err = _unifyErrors errors
-      # results.obj = resultsObj
-      # toss_lib.tossData outFn, inFns...
-      outFn err, results
-
-  fns = 
-    in :(varName = null)->
-      varName = varName
-      inx = errors.length
-      errors.push undefined
-      results.push undefined
-      finished.push false
- 
-      _cb_forked = (err, values...)->
-        throw new Error 'should call `callback` once' if finished[inx] and strict
-        errors[inx] = err
-        values = values[0] if values.length is 1
-        results[inx] = values
-        if varName
-          results[varName] = values
-        finished[inx] = true
-
-        callOut()
-      # toss_lib.makeTossableFn _cb_forked, "join.callback.#{inx}.(#{varName})"
-      inFns.push _cb_forked
-      return _cb_forked
-    out: (fn)->
-      outFn = fn
-      callOut()
-  return fns
    
 ficent = (args...)->
   ficent.flow args...
