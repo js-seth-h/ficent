@@ -349,7 +349,7 @@ createSeqFn = (args...)->
       cb_callcheck.goto = (label, args...)->
         if label is 'first'
           inx = 0 
-        if label is 'last'
+        else if label is 'last'
           inx = flowFns.length - 1 
         else
           inx = flowFns.indexOf label
