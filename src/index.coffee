@@ -321,12 +321,14 @@ createSeqFn = (args...)->
 
 
     contextArgs = args
+    is_cancled = false
 
     _createTmpCB = (fn_desc)->
       called = false
 
-
       cb_callcheck = (err, args...)->
+        if is_cancled is true
+          return 
         if called is true
           err = err or new Error 'toss is called twice.' 
           _call_next_fn err 
@@ -345,6 +347,14 @@ createSeqFn = (args...)->
       cb_callcheck.return = (args...)->
         fnInx = flowFns.length
         cb_callcheck args...
+
+      cb_callcheck.cancel = (err = new Error 'Canceled')->
+        fnInx = flowFns.length
+        cb_callcheck err
+        is_cancled = true 
+
+      # cb_callcheck.cancel = ()->
+      #   is_cancled = true
 
       cb_callcheck.goto = (label, args...)->
         if label is 'first'
@@ -415,6 +425,8 @@ createSeqFn = (args...)->
     debug 'seq    ', startFn.desc, '->', outCallback.desc 
     toss_lib.tossData _call_next_fn, outCallback
     _call_next_fn startErr, args... 
+
+    return null # return of startFn
   # startFn.hint = hint
 
   # debug 'hint ===', hint

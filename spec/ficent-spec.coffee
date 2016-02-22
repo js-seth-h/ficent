@@ -1,4 +1,4 @@
-process.env.DEBUG = "test, ficent"
+# process.env.DEBUG = "test, ficent"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -13,7 +13,7 @@ func2 = (ctx, next)->
   ctx.b = true
   next()
 
-describe 'flow', ()->    
+xdescribe 'flow', ()->    
   it 'run flow with context arguments ', (done)-> 
     ctx = 
       name : 'context base'
@@ -215,7 +215,7 @@ describe 'flow', ()->
       done()
 
  
-describe 'goto, return', ()->
+xdescribe 'goto, return', ()->
   it 'goto - skip', (done)-> 
 
     f = ficent.flow [ 
@@ -314,7 +314,7 @@ describe 'goto, return', ()->
       done()
 
   
-describe 'toss function', ()->
+xdescribe 'toss function', ()->
   it 'function', (done)-> 
     ctx = {}
     f = ficent.flow [ 
@@ -465,7 +465,7 @@ describe 'toss function', ()->
   #       .toEqual 200 * 200 
   #     done()
 
-describe 'fork', ()->    
+xdescribe 'fork', ()->    
   it 'basic', (done)-> 
 
     f = ficent.fork {desc: 'fx'}, [
@@ -550,7 +550,7 @@ describe 'fork', ()->
         .toEqual [ [1,2], ['a', 'b']]
       done()
  
-describe 'flow  - forkjoin', ()->    
+xdescribe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
     ctx = {}
     f = ficent.flow [ [func1, func2, (ctx,next)-> 
@@ -588,7 +588,7 @@ describe 'flow  - forkjoin', ()->
 
 
  
-describe 'wrap', ()->
+xdescribe 'wrap', ()->
 
   it 'wrap test', (done)->    
 
@@ -627,7 +627,7 @@ describe 'wrap', ()->
  
 
 
-describe 'toss', ()->
+xdescribe 'toss', ()->
 
 
   it 'toss data ', (done)-> 
@@ -876,14 +876,14 @@ describe 'toss', ()->
       done()
     f outCall
 
-# describe 'ficent.join', ()->
+# xdescribe 'ficent.join', ()->
 #   it 'throw in out()', (done)->
 
 #     join = ficent.join()
 #     join.out ()->
 #         
 
-describe 'hint', ()->
+xdescribe 'hint', ()->
 
   it 'hint', (done)-> 
     a = ficent { nick: 'function a()'}, (callback)->
@@ -976,7 +976,7 @@ describe 'hint', ()->
 
 
 
-describe 'double callback defence', ()->    
+xdescribe 'double callback defence', ()->    
   it 'err when double callback ', (done)->  
     fx = ficent [
       (next)->
@@ -995,7 +995,7 @@ describe 'double callback defence', ()->
 
 
 
-# describe 'ficent complex', ()->    
+# xdescribe 'ficent complex', ()->    
 
 #   it ' seq - mux - seq ', (done)-> 
       
@@ -1027,7 +1027,7 @@ describe 'double callback defence', ()->
 
 
 
-describe 'ficent seq, par', (done)->    
+xdescribe 'ficent seq, par', (done)->    
   # it 'flow ', (done)->  
   #   callback = (err)-> 
   #     expect err
@@ -1122,7 +1122,7 @@ describe 'ficent seq, par', (done)->
     taskFn()
 
 
-describe 'err?', ()->    
+xdescribe 'err?', ()->    
   it 'crypt ', (done)-> 
       
 
@@ -1142,7 +1142,7 @@ describe 'err?', ()->
         done()
     ]
 
-describe 'isolate', ()->
+xdescribe 'isolate', ()->
 
   it 'run isolate', (done)->
 
@@ -1161,3 +1161,29 @@ describe 'isolate', ()->
         done()
       _toss null
     b ()->
+
+describe 'cancel', ()->
+  it 'cancel', (done)->
+
+    (ficent [
+      (_toss)->
+        _tout = ()-> 
+          _toss null, 8
+        setTimeout _tout, 100
+
+        _t = ()->
+          _toss.cancel() 
+        setTimeout _t, 500          
+      (_toss)->
+        [v] = _toss.args()      
+        expect v
+          .toEqual 8
+
+        _t = ()-> _toss null
+        setTimeout _t, 1000
+    ]) (err, v)->
+      expect err
+        .not.toEqual null
+      expect v
+        .not.toEqual 8
+      done()
