@@ -2,7 +2,7 @@
   "name": "ficent",
   "repo": "js-seth-h/ficent",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "keywords": [
     "flow control",
     "async",
