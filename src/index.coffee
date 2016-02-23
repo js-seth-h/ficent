@@ -416,8 +416,8 @@ createSeqFn = (args...)->
         else
           fn contextArgs..., cb
       catch newErr
-        err = err or newErr 
-        _call_next_fn err
+        # err = newErr err or newErr 
+        _call_next_fn newErr
 
     toss_lib.makeTossableFn _call_next_fn, "#{startFn.desc}.internal-next"
     # debug '_call_next_fn',  '<', 'outCallback'

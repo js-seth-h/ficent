@@ -13,7 +13,7 @@ func2 = (ctx, next)->
   ctx.b = true
   next()
 
-xdescribe 'flow', ()->    
+describe 'flow', ()->    
   it 'run flow with context arguments ', (done)-> 
     ctx = 
       name : 'context base'
@@ -215,7 +215,7 @@ xdescribe 'flow', ()->
       done()
 
  
-xdescribe 'goto, return', ()->
+describe 'goto, return', ()->
   it 'goto - skip', (done)-> 
 
     f = ficent.flow [ 
@@ -314,7 +314,7 @@ xdescribe 'goto, return', ()->
       done()
 
   
-xdescribe 'toss function', ()->
+describe 'toss function', ()->
   it 'function', (done)-> 
     ctx = {}
     f = ficent.flow [ 
@@ -465,7 +465,7 @@ xdescribe 'toss function', ()->
   #       .toEqual 200 * 200 
   #     done()
 
-xdescribe 'fork', ()->    
+describe 'fork', ()->    
   it 'basic', (done)-> 
 
     f = ficent.fork {desc: 'fx'}, [
@@ -550,7 +550,7 @@ xdescribe 'fork', ()->
         .toEqual [ [1,2], ['a', 'b']]
       done()
  
-xdescribe 'flow  - forkjoin', ()->    
+describe 'flow  - forkjoin', ()->    
   it 'base fork join ', (done)-> 
     ctx = {}
     f = ficent.flow [ [func1, func2, (ctx,next)-> 
@@ -588,7 +588,7 @@ xdescribe 'flow  - forkjoin', ()->
 
 
  
-xdescribe 'wrap', ()->
+describe 'wrap', ()->
 
   it 'wrap test', (done)->    
 
@@ -627,7 +627,7 @@ xdescribe 'wrap', ()->
  
 
 
-xdescribe 'toss', ()->
+describe 'toss', ()->
 
 
   it 'toss data ', (done)-> 
@@ -876,14 +876,14 @@ xdescribe 'toss', ()->
       done()
     f outCall
 
-# xdescribe 'ficent.join', ()->
+# describe 'ficent.join', ()->
 #   it 'throw in out()', (done)->
 
 #     join = ficent.join()
 #     join.out ()->
 #         
 
-xdescribe 'hint', ()->
+describe 'hint', ()->
 
   it 'hint', (done)-> 
     a = ficent { nick: 'function a()'}, (callback)->
@@ -976,7 +976,7 @@ xdescribe 'hint', ()->
 
 
 
-xdescribe 'double callback defence', ()->    
+describe 'double callback defence', ()->    
   it 'err when double callback ', (done)->  
     fx = ficent [
       (next)->
@@ -995,7 +995,7 @@ xdescribe 'double callback defence', ()->
 
 
 
-# xdescribe 'ficent complex', ()->    
+# describe 'ficent complex', ()->    
 
 #   it ' seq - mux - seq ', (done)-> 
       
@@ -1027,7 +1027,7 @@ xdescribe 'double callback defence', ()->
 
 
 
-xdescribe 'ficent seq, par', (done)->    
+describe 'ficent seq, par', (done)->    
   # it 'flow ', (done)->  
   #   callback = (err)-> 
   #     expect err
@@ -1122,7 +1122,7 @@ xdescribe 'ficent seq, par', (done)->
     taskFn()
 
 
-xdescribe 'err?', ()->    
+describe 'err?', ()->    
   it 'crypt ', (done)-> 
       
 
@@ -1142,7 +1142,7 @@ xdescribe 'err?', ()->
         done()
     ]
 
-xdescribe 'isolate', ()->
+describe 'isolate', ()->
 
   it 'run isolate', (done)->
 
@@ -1162,28 +1162,145 @@ xdescribe 'isolate', ()->
       _toss null
     b ()->
 
-describe 'cancel', ()->
-  it 'cancel', (done)->
+
+describe 'error', ()->
+
+  it 'err intercept', (done)->
 
     (ficent [
       (_toss)->
-        _tout = ()-> 
-          _toss null, 8
-        setTimeout _tout, 100
-
-        _t = ()->
-          _toss.cancel() 
-        setTimeout _t, 500          
+        _fn = ->
+          _toss new Error 'Just Error'
+        setTimeout _fn, 100
+      (err, _toss)->
+        _toss null
       (_toss)->
-        [v] = _toss.args()      
-        expect v
-          .toEqual 8
-
-        _t = ()-> _toss null
-        setTimeout _t, 1000
+        _toss null, 9
     ]) (err, v)->
       expect err
-        .not.toEqual null
+        .toEqual null
       expect v
-        .not.toEqual 8
+        .toEqual 9
       done()
+
+
+
+  it 'err intercept with fork', (done)->
+
+    (ficent [
+      (_toss)->  
+        setTimeout _toss, 100
+      [
+        (_toss)->
+          _fn = ->
+            _toss new Error 'Just Error'
+          setTimeout _fn, 100
+        (_toss)->
+          _fn = ->
+            _toss null
+          setTimeout _fn, 100
+      ]
+      (err, _toss)->
+        _toss null
+      (_toss)->
+        _toss null, 9
+    ]) (err, v)->
+      expect err
+        .toEqual null
+      expect v
+        .toEqual 9
+      done()
+
+  it 'err intercept with setVar', (done)->
+
+    x = (callback)->
+      _fn = ->
+        callback new Error 'Just Error'
+      setTimeout _fn, 100
+
+    (ficent [
+      (_toss)->
+        x _toss.setVar 'data'
+      (err, _toss)->
+        _toss null
+      (_toss)->
+        _toss null, 9
+    ]) (err, v)->
+      expect err
+        .toEqual null
+      expect v
+        .toEqual 9
+      done()
+  it 'err intercept with setVar, fork', (done)->
+
+    x = ficent [
+      (_toss)->  
+        setTimeout _toss, 100
+      (_toss)->
+        cnt = 0
+        (ficent [
+          (_toss)->
+            cnt++
+            _fn = ->
+              if cnt < 2
+                return _toss.goto 'first'
+              _toss new Error 'Just Error'
+            setTimeout _fn, 100            
+        ]) _toss
+      (err, _toss)->
+        _toss err
+    ]
+    (ficent [
+      (_toss)->  
+        setTimeout _toss, 100  
+      [
+        (_toss)->
+          x _toss.setVar 'data'
+        (_toss)->
+          x _toss
+      ]
+      (_toss)->
+        _fn = ->
+          _toss null, 'a'
+        setTimeout _fn, 100
+      (err, _toss)->
+        expect err
+          .not.toEqual null
+        _toss null
+      (_toss)->
+        _toss null, 9
+    ]) (err, v)->
+      expect err
+        .toEqual null
+      expect v
+        .toEqual 9
+      done()
+
+
+
+
+# describe 'cancel', ()->
+#   it 'cancel', (done)->
+
+#     (ficent [
+#       (_toss)->
+#         _tout = ()-> 
+#           _toss null, 8
+#         setTimeout _tout, 100
+
+#         _t = ()->
+#           _toss.cancel() 
+#         setTimeout _t, 500          
+#       (_toss)->
+#         [v] = _toss.args()      
+#         expect v
+#           .toEqual 8
+
+#         _t = ()-> _toss null
+#         setTimeout _t, 1000
+#     ]) (err, v)->
+#       expect err
+#         .not.toEqual null
+#       expect v
+#         .not.toEqual 8
+#       done()
