@@ -48,123 +48,123 @@ _defaultCallbackFn = (err)->
     console.error err.stack
     throw err  
 _defaultCallbackFn.desc = '_defaultCallbackFn'
-toss_fn_maker =
-  done: null
-  return: null
-  goto: null
-  desc: (_toss)->
-    unless _toss.desc
-      _toss.desc = 'no-named-toss'
+# toss_fn_maker =
+#   done: null
+#   return: null
+#   goto: null
+#   desc: (_toss)->
+#     unless _toss.desc
+#       _toss.desc = 'no-named-toss'
 
-  _tossable: (_toss)->
-    _toss._tossable = true
+#   _tossable: (_toss)->
+#     _toss._tossable = true
 
-  # _var_read: {}
-  # _var_write: {}
-  _var_read: (_toss)->
-    _toss._var_read = {}
-  _var_write: (_toss)->
-    _toss._var_write = {}
-  const: (_toss)->
-    _toss.const = (name, value)->
-      _toss._var_read[name] = value
-  var: (_toss)->
-    _toss.var = (name, value)->
-      # return _toss[name] unless value 
-      # _toss[name] = value 
-      unless value
-        # read
-        value = _toss._var_write[name] or _toss._var_read[name] 
-        return value  
-      else 
-        # write
-        _toss._var_write[name] = value
+#   # _var_read: {}
+#   # _var_write: {}
+#   _var_read: (_toss)->
+#     _toss._var_read = {}
+#   _var_write: (_toss)->
+#     _toss._var_write = {}
+#   const: (_toss)->
+#     _toss.const = (name, value)->
+#       _toss._var_read[name] = value
+#   var: (_toss)->
+#     _toss.var = (name, value)->
+#       # return _toss[name] unless value 
+#       # _toss[name] = value 
+#       unless value
+#         # read
+#         value = _toss._var_write[name] or _toss._var_read[name] 
+#         return value  
+#       else 
+#         # write
+#         _toss._var_write[name] = value
       
-  setVar: (_toss)->
-    _toss.setVar = (names...)->
-      return _toss.err (err, args...)->
-        for value, inx in args
-          n = names[inx]
-          if n
-            _toss.var n, value
-        _toss null
-  vars: (_toss)->
-    _toss.vars = ()->
-      _tmp = {}
-      for own k, v of _toss._var_read
-        _tmp[k] = v
-      for own k, v of _toss._var_write
-        _tmp[k] = v
-      vars = []
-      for own k, v of _tmp
-        vars.push k
-      return vars
+#   setVar: (_toss)->
+#     _toss.setVar = (names...)->
+#       return _toss.err (err, args...)->
+#         for value, inx in args
+#           n = names[inx]
+#           if n
+#             _toss.var n, value
+#         _toss null
+#   vars: (_toss)->
+#     _toss.vars = ()->
+#       _tmp = {}
+#       for own k, v of _toss._var_read
+#         _tmp[k] = v
+#       for own k, v of _toss._var_write
+#         _tmp[k] = v
+#       vars = []
+#       for own k, v of _tmp
+#         vars.push k
+#       return vars
  
-  _args: []
-  args: (_toss)->
-    _toss.args = ()->
-      return _toss._args
-  setArgs: (_toss)->
-    _toss.setArgs = (args)->
-      _toss._args = args
-  err: (_toss)->
-    _toss.err = (nextFn)->
-      cb = (errMayBe, args...)->
-        # debug 'err-to', 'take', arguments
-        if _isError errMayBe # Stupid Proof
-          return _toss errMayBe, args...
-        try 
-          toss_lib.tossData _toss, cb
-          nextFn errMayBe, args...
-        catch err
-          _toss err
-      toss_lib.makeTossableFn cb, "#{_toss.desc}.err"
-      toss_lib.tossData cb, _toss
-      return  cb
-  vars_kv: (_toss)->
-    _toss.vars_kv = ()->
-      kv = {}
-      for k in _toss.vars()
-        kv[k] = _toss.var k
-      return kv 
+#   _args: []
+#   args: (_toss)->
+#     _toss.args = ()->
+#       return _toss._args
+#   setArgs: (_toss)->
+#     _toss.setArgs = (args)->
+#       _toss._args = args
+#   err: (_toss)->
+#     _toss.err = (nextFn)->
+#       cb = (errMayBe, args...)->
+#         # debug 'err-to', 'take', arguments
+#         if _isError errMayBe # Stupid Proof
+#           return _toss errMayBe, args...
+#         try 
+#           toss_lib.tossData _toss, cb
+#           nextFn errMayBe, args...
+#         catch err
+#           _toss err
+#       toss_lib.makeTossableFn cb, "#{_toss.desc}.err"
+#       toss_lib.tossData cb, _toss
+#       return  cb
+#   vars_kv: (_toss)->
+#     _toss.vars_kv = ()->
+#       kv = {}
+#       for k in _toss.vars()
+#         kv[k] = _toss.var k
+#       return kv 
 
  
-toss_lib =
-  makeTossableFn: (_toss, desc)->
-    return unless _toss 
-    for own k, v of toss_fn_maker
-      if _isFunction v
-        v _toss
-      else 
-        _toss[k] = v
+# toss_lib =
+#   makeTossableFn: (_toss, desc)->
+#     return unless _toss 
+#     for own k, v of toss_fn_maker
+#       if _isFunction v
+#         v _toss
+#       else 
+#         _toss[k] = v
 
-    if _toss.desc is 'no-named-toss'
-      _toss.desc = desc
+#     if _toss.desc is 'no-named-toss'
+#       _toss.desc = desc
  
 
-  tossData : (fn, srcFns...)-> 
+#   tossData : (fn, srcFns...)-> 
 
-    if fn._tossable isnt true
-      debug 'dest is not tossable', fn.desc
-      return 
+#     if fn._tossable isnt true
+#       debug 'dest is not tossable', fn.desc
+#       return 
 
-    for srcFn in srcFns
-      if srcFn._tossable isnt true
-        debug 'src is not tossable', srcFn.desc
-        continue
-      debug 'toss-data', fn.desc , '<<', srcFn.desc
-      # fn._args = srcFn._args
-      fn.setArgs srcFn.args()
-      for key, inx in srcFn.vars()
-        fn.const key, srcFn.var key
-        debug '     ', 'var :', key, srcFn.var key
+#     for srcFn in srcFns
+#       if srcFn._tossable isnt true
+#         debug 'src is not tossable', srcFn.desc
+#         continue
+#       debug 'toss-data', fn.desc , '<<', srcFn.desc
+#       # fn._args = srcFn._args
+#       fn.setArgs srcFn.args()
+#       for key, inx in srcFn.vars()
+#         fn.const key, srcFn.var key
+#         debug '     ', 'var :', key, srcFn.var key
 
-      for own k, v of srcFn 
-        continue if toss_fn_maker.hasOwnProperty k
-        # debug '     ', 'prop:', k
-        fn[k] = v 
+#       for own k, v of srcFn 
+#         continue if toss_fn_maker.hasOwnProperty k
+#         # debug '     ', 'prop:', k
+#         fn[k] = v 
 
-    return
+#     return
  
 _validating = (fns, prefix)->
   # _valid = (arr, prefix)->
@@ -248,12 +248,12 @@ createMuxFn = (muxArgs...)->
       _forkedEnd = (err, values...)-> 
         # if hint.tossOut
         debug '_forkedEnd', _forkedEnd.desc
-        toss_lib.tossData outCallback, _forkedEnd
+        # toss_lib.tossData outCallback, _forkedEnd
         cbIn err, values...
 
-      toss_lib.makeTossableFn _forkedEnd, "#{flow.desc}.callback"
-      debug 'calling M', flow.desc, '---->', _forkedEnd.desc
-      toss_lib.tossData _forkedEnd, outCallback
+      # toss_lib.makeTossableFn _forkedEnd, "#{flow.desc}.callback"
+      # debug 'calling M', flow.desc, '---->', _forkedEnd.desc
+      # toss_lib.tossData _forkedEnd, outCallback
       # toss_lib.tossData cbIn, outCallback
       # flow.desc = "fork.#{inx}"
       flow args..., _forkedEnd
@@ -266,7 +266,7 @@ createMuxFn = (muxArgs...)->
 
       outCallback err, args...
 
-    toss_lib.makeTossableFn _insideCb, "#{newFn.desc}.before-outcallback"
+    # toss_lib.makeTossableFn _insideCb, "#{newFn.desc}.before-outcallback"
     join.out _insideCb
 
   # newFn.hint = hint
@@ -312,22 +312,22 @@ createSeqFn = (args...)->
     return [ startErr, args, outCallback]
 
   startFn = (args...)->   
-    fnInx = 0
-    contextArgs = null
+     
     outCallback = null
-    brokenErr = null
 
     [startErr, args, outCallback] = _startArg args... 
 
-
-    contextArgs = args
-    is_cancled = false
+    startArgs = args
+    _toss_context = 
+      fnInx : 0
+      # brokenErr : null  
+      is_cancled : false
 
     _createTmpCB = (fn_desc)->
       called = false
 
       cb_callcheck = (err, args...)->
-        if is_cancled is true
+        if _toss_context.is_cancled is true
           return 
         if called is true
           err = err or new Error 'toss is called twice.' 
@@ -337,24 +337,45 @@ createSeqFn = (args...)->
 
         # debug  '_call_next_fn', '<', 'tmpCB ', finx
         debug 'seq-done ', cb_callcheck.desc, 'with', args...
-        toss_lib.tossData _call_next_fn, cb_callcheck 
+        # toss_lib.tossData _call_next_fn, cb_callcheck 
         _call_next_fn err, args... 
 
       # debug 'tmpCB ', finx, '<', '_call_next_fn'
-      toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
+      # toss_lib.makeTossableFn cb_callcheck, "#{fn_desc}.toss" # "ficent.flow.callback.of-#{finx}"
 
       cb_callcheck.done =
       cb_callcheck.return = (args...)->
-        fnInx = flowFns.length
+        _toss_context.fnInx = flowFns.length
         cb_callcheck args...
 
       cb_callcheck.cancel = (err = new Error 'Canceled')->
-        fnInx = flowFns.length
+        _toss_context.fnInx = flowFns.length
         cb_callcheck err
-        is_cancled = true 
+        _toss_context.is_cancled = true 
 
       # cb_callcheck.cancel = ()->
-      #   is_cancled = true
+      #   _toss_context.is_cancled = true
+
+      cb_callcheck.err = (nextFn)->
+        return (errMayBe, args...)->
+          # debug 'err-to', 'take', arguments
+          if _isError errMayBe # Stupid Proof
+            return cb_callcheck errMayBe, args...
+          try 
+            # toss_lib.tossData _toss, cb
+            nextFn errMayBe, args...
+          catch err
+            cb_callcheck err
+        # toss_lib.makeTossableFn cb, "#{_toss.desc}.err"
+        # toss_lib.tossData cb, _toss
+        # return  cb
+      cb_callcheck.setVar = (names...)->
+        return cb_callcheck.err (err, args...)->
+          for value, inx in args
+            n = names[inx]
+            if n
+              cb_callcheck.var n, value
+          cb_callcheck err, args...
 
       cb_callcheck.goto = (label, args...)->
         if label is 'first'
@@ -366,67 +387,85 @@ createSeqFn = (args...)->
           if inx < 0 
             return throw new Error 'Failed to goto ' + label
 
-        fnInx = inx 
+        _toss_context.fnInx = inx 
         cb_callcheck null, args...
+      cb_callcheck.var = (args...)->
+
+        if args.length is 2 
+          [var_name, value] = args
+          _toss_context[var_name] = value
+        else 
+          return _toss_context[args[0]]
+
+      cb_callcheck.args = ()->
+        return _toss_context.args
+        
+      cb_callcheck.setArgs = (args)->
+        _toss_context.args = args
+
 
       return cb_callcheck
 
     _call_next_fn = (err, tossArgs...)->
-      if brokenErr
-        return if err isnt brokenErr
+      # if _toss_context.brokenErr
+      #   return if err isnt _toss_context.brokenErr
 
-      _call_next_fn.setArgs tossArgs
+      # _call_next_fn.setArgs tossArgs
       if err
         err.msg = err.toString()
         err.hint = err.hint or hint
         err.ficentFn = err.ficentFn or startFn 
-      if flowFns.length is fnInx
+
+
+      if flowFns.length is _toss_context.fnInx
         # debug ' - assign to outCallback'
         # debug 'outCallback',  '<', '_call_next_fn'
         # if hint and hint.tossOut
-        toss_lib.tossData outCallback, _call_next_fn
-        return outCallback err, tossArgs... #  contextArgs...
+        # toss_lib.tossData outCallback, _call_next_fn
+        return outCallback err, tossArgs... #  startArgs...
 
-      fn = flowFns[fnInx]
-      fnInx++ 
+      fn = flowFns[_toss_context.fnInx]
+      _toss_context.fnInx++ 
 
-      # debug 'fnInx', fnInx, fn
+      # debug '_toss_context.fnInx', _toss_context.fnInx, fn
 
       if _isString fn # Label
         return _call_next_fn err, tossArgs...
 
       if _isArray fn 
         fn = createMuxFn {desc: "#{fn.desc}.fork-wrap"}, fn 
-        # fn.desc = "flow.#{fnInx}.fork-wrap"
+        # fn.desc = "flow.#{_toss_context.fnInx}.fork-wrap"
 
       unless _isFunction fn
         outCallback new Error 'ficent only accept Function or Array or Label'
         return
-      isErrorHandlable = (fn.length is contextArgs.length + 2) # include err, callback
+      isErrorHandlable = (fn.length is startArgs.length + 2) # include err, callback
       if err and not isErrorHandlable
         return _call_next_fn err
 
       try
         cb = _createTmpCB fn.desc
-        debug 'calling  ', fn.desc, '---->', cb.desc
-        toss_lib.tossData cb, _call_next_fn 
+        cb.setArgs tossArgs # NEW TOSS
+
+        # debug 'calling  ', fn.desc, '---->', cb.desc
+        # toss_lib.tossData cb, _call_next_fn 
 
         if isErrorHandlable
-          fn err, contextArgs..., cb
+          fn err, startArgs..., cb
         else
-          fn contextArgs..., cb
+          fn startArgs..., cb
       catch newErr
         # err = newErr err or newErr 
         _call_next_fn newErr
 
-    toss_lib.makeTossableFn _call_next_fn, "#{startFn.desc}.internal-next"
+    # toss_lib.makeTossableFn _call_next_fn, "#{startFn.desc}.internal-next"
     # debug '_call_next_fn',  '<', 'outCallback'
 
-    debug 'seq    ', startFn.desc, '->', outCallback.desc 
-    toss_lib.tossData _call_next_fn, outCallback
+    # debug 'seq    ', startFn.desc, '->', outCallback.desc 
+    # toss_lib.tossData _call_next_fn, outCallback
     _call_next_fn startErr, args... 
 
-    return null # return of startFn
+    return _toss_context  # return of startFn
   # startFn.hint = hint
 
   # debug 'hint ===', hint
@@ -486,7 +525,7 @@ ficent.series = (args...)->
       # toss_lib.tossData outCallback, seriesCallback
       outCallback err, results_array
 
-    toss_lib.makeTossableFn seriesCallback, 'series-internal-callback'
+    # toss_lib.makeTossableFn seriesCallback, 'series-internal-callback'
     # toss_lib.tossData seriesCallback, outCallback
     f seriesCallback
  
