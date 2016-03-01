@@ -1,6 +1,6 @@
 {
   "name": "ficent",
-  "version": "1.1.0-1",
+  "version": "1.1.1",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling\n consists of high order function",
   "main": "lib",
   "scripts": { 

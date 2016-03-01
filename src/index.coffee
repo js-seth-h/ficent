@@ -200,7 +200,7 @@ createJoin = (strict = true)->
       # results.obj = resultsObj
       debug 'join done'
       # toss_lib.tossData outFn, inFns...
-      outFn err, results
+      outFn err, results...
 
   fns = 
     in :(varName = null)->

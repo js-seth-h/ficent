@@ -544,7 +544,7 @@ describe 'fork', ()->
         debug 'param', _toss.args()
         _toss null, _toss.args()...
     ]
-    f (err, result )->
+    f (err, result... )->
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       expect result
         .toEqual [ [1,2], ['a', 'b']]
@@ -1069,7 +1069,7 @@ describe 'ficent seq, par', (done)->
     taskFn = ficent.par (num, next)->
       debug 'par in', num 
       next null, num * 1.5 
-    taskFn input, (err, results)->
+    taskFn input, (err, results...)->
       debug 'par, callback', arguments
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       expect results
