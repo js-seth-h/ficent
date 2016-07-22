@@ -211,6 +211,7 @@ createJoin = (strict = true)->
       finished.push false
  
       _cb_forked = (err, values...)->
+        # 가능하면 오리지날 에러에 대한 처리를 추가.
         throw new Error 'should call `callback` once' if finished[inx] and strict
         errors[inx] = err
         values = values[0] if values.length is 1
@@ -430,12 +431,20 @@ createSeqFn = (args...)->
       # debug '_toss_context.fnInx', _toss_context.fnInx, fn
 
       if _isString fn # Label
-        return _call_next_fn err, tossArgs...
+        marker = 'plug-socket:'
+        if fn.substr(0, marker.length) is marker
+          func_name = fn.substr marker.length
+          # console.log 'func_name', func_name, startFn[func_name]
+          if _isFunction startFn[func_name]
+            fn = startFn[func_name]
+        # console.log 'fn = ', fn
 
       if _isArray fn 
         fn = createMuxFn {desc: "#{fn.desc}.fork-wrap"}, fn 
         # fn.desc = "flow.#{_toss_context.fnInx}.fork-wrap"
 
+      if _isString fn
+        return _call_next_fn err, tossArgs...
       unless _isFunction fn
         outCallback new Error 'ficent only accept Function or Array or Label'
         return

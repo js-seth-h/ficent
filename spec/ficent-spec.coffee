@@ -313,6 +313,48 @@ describe 'goto, return', ()->
         .toEqual 99
       done()
 
+  it 'plug-socket no function', (done)-> 
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.var 'a', 99
+        _toss null
+      "plug-socket:testA"
+      (_toss)-> 
+        _toss.var 'a', 88
+        _toss null, _toss
+    ]
+    # f (req,res,next)
+    f (err, obj)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect obj.var('a')
+        .toEqual 88
+      done()
+
+  it 'plug-socket with function', (done)-> 
+    f = ficent.flow [ 
+      (_toss)-> 
+        _toss.var 'a', 99
+        _toss null
+      "plug-socket:testA"
+      (_toss)-> 
+        # _toss.var 'a', 88
+        _toss null, _toss
+    ]
+    f.testA = (_toss)->
+      # console.log 'in testA', _toss.var 'a'
+      _toss.var 'a', 77
+      _toss null
+
+    f (err, obj)-> 
+      debug 'err ', err
+      expect err
+        .toEqual null
+      expect obj.var('a')
+        .toEqual 77
+      done()
+
   
 # describe 'toss function', ()->
 #   it 'function', (done)-> 
