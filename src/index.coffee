@@ -145,15 +145,14 @@ createJoin = ()->
 
 
 createMuxFn = (fns)-> 
-  entryFn = (args...)->    
-    self = this
+  entryFn = (args...)->     
     [startErr, startArgs, outCallback] = _alignArgs args... 
+    context = createJoin() 
 
     forkingFns = fns.map (fn, inx)-> createSeqFn fn
-    context = createJoin() 
     context.muxContext = []
     forkingFns.forEach (fn, inx)->
-      ctx = fn.apply self,[ startErr, startArgs..., context.in() ]
+      ctx = fn startErr, startArgs..., context.in()
       context.muxContext.push ctx
     context.out outCallback
 
@@ -165,8 +164,7 @@ createMuxFn = (fns)->
     return context
   return entryFn
 
-callContext = (self, flowFns, startArgs, cb)->
-
+callContext = (flowFns, startArgs, cb)->
   make_tosser = ()->
     _tosser = (err, args...)->
       if context.is_canceled is true
@@ -210,6 +208,8 @@ callContext = (self, flowFns, startArgs, cb)->
       context.fnInx = inx 
       _tosser null, args...
 
+    _tosser.getArgs = ()->
+      _tosser.args()
     _tosser.args = ()->
       return _tosser.argv
       
@@ -224,6 +224,8 @@ callContext = (self, flowFns, startArgs, cb)->
           if n
             _tosser.var n, value
         _tosser err, args...
+    _tosser.getVar = (args...)->
+      _tosser.var args...
     _tosser.var = (args...)-> 
       if args.length is 2 
         [var_name, value] = args
@@ -262,10 +264,12 @@ callContext = (self, flowFns, startArgs, cb)->
 
       if cur_fn_is_error_handler
         debug 'try call', cur_fn, [err, context.startArgs..., _toss]
-        cur_fn.apply context.this, [err, context.startArgs..., _toss]
+        debug 'try call, scope =', context.scope
+        cur_fn.apply context, [err, context.startArgs..., _toss]
       else
         debug 'try call', cur_fn, [ context.startArgs..., _toss]
-        cur_fn.apply context.this, [context.startArgs..., _toss] 
+        debug 'try call, scope =', context.scope
+        cur_fn.apply context, [context.startArgs..., _toss] 
     catch newErr
       # err = newErr err or newErr 
       call_next_fn newErr
@@ -277,7 +281,7 @@ callContext = (self, flowFns, startArgs, cb)->
     startArgs: startArgs
     outCallback: cb
     vars: {}
-    self: self
+    # scope: this
     next: call_next_fn
     cancel: do_cancel
 
@@ -294,7 +298,7 @@ createSeqFn = (flowFns)->
     [startErr, startArgs, callback] = _alignArgs args... 
 
     debug 'entryFn', startErr, startArgs, callback
-    context = callContext this, flowFns, startArgs, callback
+    context = callContext flowFns, startArgs, callback
     context.next startErr
     return context
   return entryFn

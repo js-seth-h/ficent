@@ -1393,23 +1393,66 @@ describe 'cancel', ()->
       done()
     setTimeout chk, 500
 
-describe 'this', ()->
-  it 'this', (done)-> 
-    class A
-      contructor :()->
-        this.var = 7
 
-      action: ficent [
-        (v, _toss)-> 
-          _toss null, v * @var, @var
-      ]
+describe 'context', ()->
+  it 'this in extend fn', (done)-> 
+    # class A
+    #   constructor :()->
+    #     @var7 = 7
+    #     console.log 'A.constructor'
 
-    aa = new A()
-    aa.action 8, (err, mul, v)->
+    action = ficent [
+      (v, _toss)-> 
+        @var7 = 7
+        _toss null
+      (v, _toss)-> 
+        _toss null, v * @var7, @var7
+    ]
+
+    # aa = new A()
+    # expect aa.var7
+    #   .toEqual 7
+
+    action 8, (err, mul, v)->
       expect err
         .toEqual null
       expect mul
-        .not.toEqual 7 * 8
+        .toEqual 7 * 8
       expect v
-        .not.toEqual 7
+        .toEqual 7
       done()
+
+
+  ###
+    불가능하다. 자동으로 context가 계속 승계되면, 함수단위로 구분이 안가는 것은 물론, 의도치않게, context가 연결되어, 예상 불가능한 버그는 어찌할수가 없다. 따라서 안함.
+  ###
+  # it 'this with fork - impossible', (done)->  
+
+  #   action = ficent [
+  #     (v, _toss)-> 
+  #       @var7 = 7
+  #       _toss null
+  #     [
+  #       (v, _toss)-> 
+  #         _toss null, 2 * v * @var7, @var7
+  #       (v, _toss)-> 
+  #         _toss null, 3 * v * @var7, @var7
+  #     ]
+  #     (v,_toss)->
+  #       results = _toss.getArgs()
+  #       _toss null, results...
+
+  #   ] 
+
+  #   action 8, (err, m2, m3)->
+  #     expect err
+  #       .toEqual null
+  #     expect m2[0]
+  #       .toEqual 2 * 7 * 8
+  #     expect m3[0]
+  #       .toEqual 3 * 7 * 8
+  #     expect m2[1]
+  #       .toEqual 7
+  #     expect m3[1]
+  #       .toEqual 7
+  #     done()
