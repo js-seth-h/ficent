@@ -217,6 +217,8 @@ callContext = (flowFns, startArgs, cb)->
       _tosser.argv = args
 
 
+    _tosser.vars = ()->
+      context.vars
     _tosser.setVar = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args
