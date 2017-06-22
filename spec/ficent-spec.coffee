@@ -1175,6 +1175,25 @@ describe 'ficent seq, par', (done)->
 
     taskFn()
 
+  it 'storeArgs', (done)->
+    async_ab = (callback)->
+      callback null, 1, 2 
+    taskFn = ficent [
+      (_toss)->
+        _toss.var 'c', 20
+        async_ab _toss.storeArgs 'a', 'b'
+      (err, _toss)->
+        expect _toss.var 'a'
+          .toEqual 1 
+        expect _toss.var 'b'
+          .toEqual 2
+        expect _toss.var 'c'
+          .toEqual 20
+        done()
+    ]
+
+    taskFn()
+
 
 
 

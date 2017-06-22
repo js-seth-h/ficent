@@ -219,15 +219,17 @@ callContext = (flowFns, startArgs, cb)->
 
     _tosser.vars = ()->
       context.vars
-    _tosser.setVar = (names...)->
+
+    _tosser.setVar = # DEPRECATED
+    _tosser.storeArgs = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args
           n = names[inx]
           if n
             _tosser.var n, value
         _tosser err, args...
-    _tosser.getVar = (args...)->
-      _tosser.var args...
+    # _tosser.getVar = (args...)->
+    #   _tosser.var args...
     _tosser.var = (args...)-> 
       if args.length is 2 
         [var_name, value] = args
