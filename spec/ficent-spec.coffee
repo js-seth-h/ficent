@@ -1413,6 +1413,7 @@ describe 'cancel', ()->
     setTimeout chk, 500
 
 
+
 describe 'context', ()->
   it 'this in extend fn', (done)-> 
     # class A
@@ -1441,6 +1442,36 @@ describe 'context', ()->
         .toEqual 7
       done()
 
+
+
+
+  it 'function level this', (done)->  
+    runable_fn = ficent [
+      (new_val, callback)-> 
+        if new_val
+          @context_var = new_val
+        callback null
+      (doing, callback)-> 
+        callback null, @context_var
+    ]
+    
+    runable_fn 7, (err, val)->
+      expect err
+        .toEqual null
+      expect val 
+        .toEqual 7
+      runable_fn undefined, (err, val)->
+        expect err
+          .toEqual null
+        expect val 
+          .toEqual undefined
+
+        runable_fn 11, (err, val)->
+          expect err
+            .toEqual null
+          expect val 
+            .toEqual 11
+          done()
 
   ###
     불가능하다. 자동으로 context가 계속 승계되면, 함수단위로 구분이 안가는 것은 물론, 의도치않게, context가 연결되어, 예상 불가능한 버그는 어찌할수가 없다. 따라서 안함.
