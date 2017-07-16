@@ -1156,6 +1156,7 @@ describe 'ficent seq, par', (done)->
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
+describe 'storeArgs', (done)->    
   it 'setVar', (done)->
     async_ab = (callback)->
       callback null, 1, 2 
@@ -1189,6 +1190,22 @@ describe 'ficent seq, par', (done)->
           .toEqual 2
         expect _toss.var 'c'
           .toEqual 20
+        done()
+    ]
+
+    taskFn()
+
+
+  it 'storeArgs  with Err', (done)->
+    async_ab = (callback)->
+      callback  new Error 'JUST'
+    taskFn = ficent [
+      (_toss)->
+        _toss.var 'c', 20
+        async_ab _toss.storeArgs 'a', 'b'
+      (err, _toss)->
+        expect err
+          .not.toEqual null
         done()
     ]
 
