@@ -1,4 +1,4 @@
-process.env.DEBUG = "test, ficent"
+process.env.DEBUG = "test, -ficent"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
@@ -14,7 +14,7 @@ func2 = (ctx, next)->
   next()
 
 describe 'flow', ()->    
-  it 'run flow with context arguments ', (done)-> 
+  xit 'run flow with context arguments ', (done)-> 
     ctx = 
       name : 'context base'
     
@@ -35,7 +35,7 @@ describe 'flow', ()->
     fx ctx
   
 
-  it 'run flow with single function ', (done)-> 
+  xit 'run flow with single function ', (done)-> 
     debug 'run flow with single function '
     ctx = 
       name : 'context base'
@@ -52,7 +52,7 @@ describe 'flow', ()->
       done()    
 
 
-  it 'run flow with do ', (done)->  
+  xit 'run flow with do ', (done)->  
     do ficent [  
       (next)->
         debug  'arguments', arguments 
@@ -60,7 +60,7 @@ describe 'flow', ()->
         done()
     ]
   
-  it 'run function created by flow', (done)-> 
+  xit 'run function created by flow', (done)-> 
 
     ctx = 
       name : 'context base'
@@ -81,7 +81,7 @@ describe 'flow', ()->
         .toBeTruthy()
       done()
 
-  it 'with no arguments ', (done)-> 
+  xit 'with no arguments ', (done)-> 
 
     result = 1
 
@@ -103,7 +103,7 @@ describe 'flow', ()->
       expect(result).toEqual 11
 
       done()  
-  it 'run with multiple context arguments ', (done)-> 
+  xit 'run with multiple context arguments ', (done)-> 
 
     ctx = {}
     ctx1 = {}
@@ -126,7 +126,7 @@ describe 'flow', ()->
 
       done()
 
-  it 'run with nesting flow ', (done)-> 
+  xit 'run with nesting flow ', (done)-> 
 
     ctx = {}
     
@@ -144,7 +144,7 @@ describe 'flow', ()->
       done()
 
 
-  it 'support error jump ', (done)-> 
+  xit 'support error jump ', (done)-> 
 
     ctx = {}
     func_mk_Err = (ctx, next)->
@@ -165,7 +165,7 @@ describe 'flow', ()->
       assert ctx.b is undefined , "must not exist"
 
       done()
-  it 'support error but no handler', (done)-> 
+  xit 'support error but no handler', (done)-> 
 
     ctx = {}
     func_mk_Err = (ctx, next)->
@@ -182,7 +182,7 @@ describe 'flow', ()->
       assert ctx.b is undefined , "must not exist"
 
       done()
-  it 'occur err no cature in first', (done)->  
+  xit 'occur err no cature in first', (done)->  
     ctx = {}
     func_mk_Err = (ctx, next)->
       debug 'mk Err'
@@ -201,7 +201,7 @@ describe 'flow', ()->
       assert util.isError err, 'occerror error'
       assert ctx.errHandler is 1, 'got handler'
       done()
-  it 'occur err no cature in not first', (done)->  
+  xit 'occur err no cature in not first', (done)->  
     ctx = {}
     func_mk_Err = (ctx, next)->
       debug 'mk Err'
@@ -222,7 +222,7 @@ describe 'flow', ()->
 
  
 describe 'goto, return', ()->
-  it 'goto - skip', (done)-> 
+  xit 'goto - skip', (done)-> 
 
     f = ficent.flow [ 
       (_toss)-> 
@@ -259,7 +259,7 @@ describe 'goto, return', ()->
       done()
   
  
-  it 'goto - repeat', (done)-> 
+  xit 'goto - repeat', (done)-> 
 
     f = ficent.flow [ 
       (_toss)-> 
@@ -301,7 +301,7 @@ describe 'goto, return', ()->
       done()
   
  
-  it 'return', (done)-> 
+  xit 'return', (done)-> 
     f = ficent.flow [ 
       (_toss)-> 
         _toss.var 'a', 99
@@ -319,7 +319,7 @@ describe 'goto, return', ()->
         .toEqual 99
       done()
 
-  # it 'plug-socket no function', (done)-> 
+  # xit 'plug-socket no function', (done)-> 
   #   f = ficent.flow [ 
   #     (_toss)-> 
   #       _toss.var 'a', 99
@@ -338,7 +338,7 @@ describe 'goto, return', ()->
   #       .toEqual 88
   #     done()
 
-  # it 'plug-socket with function', (done)-> 
+  # xit 'plug-socket with function', (done)-> 
   #   f = ficent.flow [ 
   #     (_toss)-> 
   #       _toss.var 'a', 99
@@ -363,7 +363,7 @@ describe 'goto, return', ()->
 
   
 # describe 'toss function', ()->
-#   it 'function', (done)-> 
+#   xit 'function', (done)-> 
 #     ctx = {}
 #     f = ficent.flow [ 
 #       (_toss)-> 
@@ -387,7 +387,7 @@ describe 'goto, return', ()->
 #         .toEqual 10
 #       done()
 
-#   it 'cross ficent', (done)-> 
+#   xit 'cross ficent', (done)-> 
 #     ctx = {}
 #     g = ficent.flow (_toss)->
 #       # _toss.setValue 112
@@ -413,7 +413,7 @@ describe 'goto, return', ()->
 #         .toEqual 112
 #       done()
 
-#   it 'cross ficent with toss.err', (done)-> 
+#   xit 'cross ficent with toss.err', (done)-> 
 #     ctx = {}
 #     g = ficent.flow (_toss)->
 #       _toss null, 112
@@ -437,7 +437,7 @@ describe 'goto, return', ()->
 #       expect ctx.x
 #         .toEqual 112
 #       done()
-#   it 'cross ficent with toss.setVar', (done)-> 
+#   xit 'cross ficent with toss.setVar', (done)-> 
 #     ctx = {}
 #     g = ficent.flow (_toss)-> 
 #       _toss null, 'g-string'
@@ -456,7 +456,7 @@ describe 'goto, return', ()->
 #         .toEqual 'g-string'
 #       done()
 
-  # it 'cross ficent with ficent.serial', (done)-> 
+  # xit 'cross ficent with ficent.serial', (done)-> 
   #   ctx = {}
   #   f = ficent.flow {desc:'ser-wrap' }, [ 
   #     (_toss)-> 
@@ -484,7 +484,7 @@ describe 'goto, return', ()->
   #     expect m
   #       .toEqual 200 * 200 
   #     done()
-  # it 'cross ficent with ficent.parallel', (done)-> 
+  # xit 'cross ficent with ficent.parallel', (done)-> 
   #   ctx = {}
   #   f = ficent.flow {desc:'par-wrap' }, [ 
   #     (_toss)-> 
@@ -514,7 +514,7 @@ describe 'goto, return', ()->
   #     done()
 
 describe 'fork', ()->    
-  it 'basic', (done)-> 
+  xit 'basic', (done)-> 
 
     f = ficent.fork  [
       (ctx, _toss)->  
@@ -539,7 +539,7 @@ describe 'fork', ()->
       assert ctx.cnt is 5 , 'fork count 5 , but ' + ctx.cnt
       done()
   
-  it 'with Err', (done)->
+  xit 'with Err', (done)->
     forkingFns = []
     ctx = cnt : 0
 
@@ -560,7 +560,7 @@ describe 'fork', ()->
       assert ctx.cnt is 3 , 'fork count 3' 
       done() 
  
-  it 'fork, no callback', (done)->
+  xit 'fork, no callback', (done)->
     forkingFns = []
 
     f = ficent.fork [
@@ -579,7 +579,7 @@ describe 'fork', ()->
     assert ctx.cnt is 3, 'fork count 3 ' 
     done()
  
-  it 'param', (done)-> 
+  xit 'param', (done)-> 
 
     f = ficent [
       [ 
@@ -602,7 +602,7 @@ describe 'fork', ()->
       done()
 
 describe 'flow  - forkjoin', ()->    
-  it 'base fork join ', (done)-> 
+  xit 'base fork join ', (done)-> 
     ctx = {}
     f = ficent.flow [ [func1, func2, (ctx,next)-> 
       ctx.zzz = 9
@@ -617,7 +617,7 @@ describe 'flow  - forkjoin', ()->
       assert ctx.b , "must exist" 
       done()
    
-  it 'with Err ', (done)-> 
+  xit 'with Err ', (done)-> 
 
     ctx = {}
     
@@ -639,9 +639,9 @@ describe 'flow  - forkjoin', ()->
  
 describe 'wrap', ()->
 
-  it 'wrap test', (done)->    
+  xit 'wrap test', (done)->    
 
-    init = (ctx, next)-> 
+    inxit = (ctx, next)-> 
       ctx.num = 9
       next()
     end = (ctx, next)-> 
@@ -656,9 +656,9 @@ describe 'wrap', ()->
     
     wrapper([inFn]) {}, ()->
       done()
-  it 'wrap test - no callback, no array', (done)->    
+  xit 'wrap test - no callback, no array', (done)->    
 
-    init = (ctx, next)-> 
+    inxit = (ctx, next)-> 
       ctx.num = 9
       next()
     end = (ctx, next)-> 
@@ -679,7 +679,7 @@ describe 'wrap', ()->
 describe 'toss', ()->
 
 
-  it 'toss data ', (done)-> 
+  xit 'toss data ', (done)-> 
     debug '-----------------------------------------', 'toss data' 
     ctx = {}
     ctx1 = {}
@@ -703,7 +703,7 @@ describe 'toss', ()->
 
       done()
  
-  # it 'toss data in fork ', (done)-> 
+  # xit 'toss data in fork ', (done)-> 
   #   debug '---------------------', 'toss data in fork'
   #   # output = {}
   #   f = ficent.flow [ 
@@ -766,7 +766,7 @@ describe 'toss', ()->
   #       console.error e.stack
 
   #     done() 
-  it 'toss err 1 ', (done)-> 
+  xit 'toss err 1 ', (done)-> 
 
     output = {}
     f = ficent.flow [ 
@@ -783,8 +783,42 @@ describe 'toss', ()->
         .not.toBe null
       done()
 
+  it 'toss err from oth ', (done)-> 
+    check_board = {}
+    oth = ficent [
+      (_toss)->
+        _toss null
+      (_toss)->
+        _toss.a.b.c.d.e = 9
+        # throw new Error 'FAKE' 
+        debug 'oth ok??????????'
+        _toss null
+      (_toss)->
+        _toss null
+      (err, _toss)->
+        _toss err, null        
+    ]
+    output = {}
+    f = ficent [ 
+      (toss)-> 
+        debug 'call oth'
+        oth toss.err (err)->   
+          check_board.oth_cb = true
+          debug 'OTHER callback err?', err
+          toss null
+      (toss)->    
+        toss null 
+    ] 
+    f (err)->
+      debug 'out callback err?', err
+      expect check_board.oth_cb
+        .not.toBe true
+      expect err 
+        .not.toBe null
+      done()
 
-  it 'toss err 2 ', (done)-> 
+
+  xit 'toss err 2 ', (done)-> 
 
     output = {}
     f = ficent.flow [ 
@@ -795,14 +829,14 @@ describe 'toss', ()->
         toss()
     ] 
     f (err)->
-      debug err
+      debug 'out callback err?', err
       expect err 
         .not.toBe null
       done()
 
   f = (callback)-> callback null, 5
   e = (callback)-> callback new Error 'in E'
-  it 'no err ', (done)-> 
+  xit 'no err ', (done)-> 
     a = ficent (_toss)->
       debug 1
       f _toss.err (err, val)-> 
@@ -815,7 +849,7 @@ describe 'toss', ()->
         .toBe null
       done()
 
-  it 'catch ', (done)-> 
+  xit 'catch ', (done)-> 
     a = ficent (callback)->
       throw new Error 'TEST'
       f callback.err (err, val)-> 
@@ -828,7 +862,7 @@ describe 'toss', ()->
       done()
 
 
-  it 'catch inside ', (done)-> 
+  xit 'catch inside ', (done)-> 
     a = ficent (callback)->
       f callback.err (err, val)-> 
         throw new Error 'TEST'
@@ -841,7 +875,7 @@ describe 'toss', ()->
       done()
 
 
-  it 'toss before callbacked', (done)-> 
+  xit 'toss before callbacked', (done)-> 
     a = ficent (callback)->
       e callback.err (err, val)-> 
         throw new Error 'TEST2'
@@ -852,7 +886,7 @@ describe 'toss', ()->
         .not.toBe null
       done()
 
-  it 'double toss', (done)->
+  xit 'double toss', (done)->
     g = ficent  [
       (_toss)->
         debug 'double toss', 'g'
@@ -885,7 +919,7 @@ describe 'toss', ()->
     f outCall
 
  
-  # it 'double toss args()', (done)->
+  # xit 'double toss args()', (done)->
   #   g = ficent [
   #     (_toss)->
   #       debug 'double toss', 'g'
@@ -928,7 +962,7 @@ describe 'toss', ()->
   #   f outCall
 
 # describe 'ficent.join', ()->
-#   it 'throw in out()', (done)->
+#   xit 'throw in out()', (done)->
 
 #     join = ficent.join()
 #     join.out ()->
@@ -936,7 +970,7 @@ describe 'toss', ()->
 
 # describe 'hint', ()->
 
-#   it 'hint', (done)-> 
+#   xit 'hint', (done)-> 
 #     a = ficent { nick: 'function a()'}, (callback)->
 #       callback null
 #     a (err)->
@@ -947,7 +981,7 @@ describe 'toss', ()->
 #         .toEqual 'function a()'
 #       done() 
   
-#   it 'hint fork', (done)-> 
+#   xit 'hint fork', (done)-> 
 #     ctx = 
 #       cnt : 0
 
@@ -965,7 +999,7 @@ describe 'toss', ()->
 #         .toEqual 'function f()'
 #       done()
 
-#   it 'hint on error  ', (done)-> 
+#   xit 'hint on error  ', (done)-> 
 #     a = ficent { nick: 'function a()'}, (callback)->
 #       throw new Error 'TEST'
 #       f callback.err (err, val)-> 
@@ -983,7 +1017,7 @@ describe 'toss', ()->
 #       done()
 
 
-#   it 'hint on error when wrap ficent ', (done)-> 
+#   xit 'hint on error when wrap ficent ', (done)-> 
     
 #     b = ficent 
 #       nick: 'function b()'
@@ -1007,7 +1041,7 @@ describe 'toss', ()->
 
 
 
-#   it 'hint on error with fork', (done)->
+#   xit 'hint on error with fork', (done)->
 #     ctx = 
 #       cnt : 0
 
@@ -1028,7 +1062,7 @@ describe 'toss', ()->
 
 
 describe 'double callback defence', ()->    
-  it 'err when double callback ', (done)->  
+  xit 'err when double callback ', (done)->  
     fx = ficent [
       (next)->
         next null
@@ -1051,7 +1085,7 @@ describe 'double callback defence', ()->
 
 # describe 'ficent complex', ()->    
 
-#   it ' seq - mux - seq ', (done)-> 
+#   xit ' seq - mux - seq ', (done)-> 
       
 #     debug '========================================================'
 #     debug ' ficent complex'
@@ -1082,7 +1116,7 @@ describe 'double callback defence', ()->
 
 
 describe 'ficent seq, par', (done)->    
-  # it 'flow ', (done)->  
+  # xit 'flow ', (done)->  
   #   callback = (err)-> 
   #     expect err
   #       .toEqual null
@@ -1101,7 +1135,7 @@ describe 'ficent seq, par', (done)->
   #       func2
   #     ], callback
 
-  # it 'fork', (done)->
+  # xit 'fork', (done)->
   #   forkingFns = []
   #   ctx = 
   #     cnt : 0
@@ -1116,7 +1150,7 @@ describe 'ficent seq, par', (done)->
 
   #   ficent.do [forkingFns], callback
 
-  it 'par', (done)->  
+  xit 'par', (done)->  
     input = [3, 6, 9]
     taskFn = ficent.par (num, next)->
       debug 'par in', num 
@@ -1128,7 +1162,7 @@ describe 'ficent seq, par', (done)->
         .toEqual [[4.5], [9], [13.5]]
       done()
 
-  it 'ser', (done)-> 
+  xit 'ser', (done)-> 
     input = [3, 6, 9]
     results = []
     taskFn = ficent.ser (num, next)->
@@ -1142,7 +1176,7 @@ describe 'ficent seq, par', (done)->
       # assert ctx.cnt is 5 , 'fork count 5 ' 
       done()
 
-  it 'ser2', (done)-> 
+  xit 'ser2', (done)-> 
     input = [3, 6, 9]
     results = []
     taskFn = ficent.ser (num, next)->
@@ -1157,7 +1191,7 @@ describe 'ficent seq, par', (done)->
       done()
 
 describe 'storeArgs', (done)->    
-  it 'setVar', (done)->
+  xit 'setVar', (done)->
     async_ab = (callback)->
       callback null, 1, 2 
     taskFn = ficent [
@@ -1176,7 +1210,7 @@ describe 'storeArgs', (done)->
 
     taskFn()
 
-  it 'storeArgs', (done)->
+  xit 'storeArgs', (done)->
     async_ab = (callback)->
       callback null, 1, 2 
     taskFn = ficent [
@@ -1196,7 +1230,7 @@ describe 'storeArgs', (done)->
     taskFn()
 
 
-  it 'storeArgs  with Err', (done)->
+  xit 'storeArgs  with Err', (done)->
     async_ab = (callback)->
       callback  new Error 'JUST'
     taskFn = ficent [
@@ -1216,7 +1250,7 @@ describe 'storeArgs', (done)->
 
 
 describe 'err?', ()->    
-  it 'crypt ', (done)-> 
+  xit 'crypt ', (done)-> 
       
 
     md5 = (v)-> require("crypto").createHash("md5").update(v).digest("hex")
@@ -1237,7 +1271,7 @@ describe 'err?', ()->
 
 describe 'isolate', ()->
 
-  it 'run isolate', (done)->
+  xit 'run isolate', (done)->
 
     a = ficent (_toss)->
       _toss.var 'a', 9
@@ -1258,7 +1292,7 @@ describe 'isolate', ()->
 
 describe 'error', ()->
 
-  it 'err intercept', (done)->
+  xit 'err intercept', (done)->
 
     (ficent [
       (_toss)->
@@ -1278,7 +1312,7 @@ describe 'error', ()->
 
 
 
-  it 'err intercept with fork', (done)->
+  xit 'err intercept with fork', (done)->
     debug 'err intercept with fork'
 
     (ficent [
@@ -1305,7 +1339,7 @@ describe 'error', ()->
         .toEqual 9
       done()
 
-  it 'err intercept with setVar', (done)->
+  xit 'err intercept with setVar', (done)->
     debug 'err intercept with setVar'
 
 
@@ -1327,7 +1361,7 @@ describe 'error', ()->
       expect v
         .toEqual 9
       done()
-  it 'err intercept with setVar, fork', (done)->
+  xit 'err intercept with setVar, fork', (done)->
     debug 'err intercept with setVar, fork'
 
     ext_func = ficent [
@@ -1381,7 +1415,7 @@ describe 'error', ()->
 
 
 describe 'cancel', ()->
-  it 'cancel', (done)->
+  xit 'cancel', (done)->
 
     test = 9
     call = (ficent [
@@ -1399,7 +1433,7 @@ describe 'cancel', ()->
         .toEqual 9
       done()
     setTimeout chk, 500
-  it 'fork cancel', (done)->
+  xit 'fork cancel', (done)->
 
     test = 9
     test2 = -9
@@ -1432,7 +1466,7 @@ describe 'cancel', ()->
 
 
 describe 'context', ()->
-  it 'this in extend fn', (done)-> 
+  xit 'this in extend fn', (done)-> 
     # class A
     #   constructor :()->
     #     @var7 = 7
@@ -1462,7 +1496,7 @@ describe 'context', ()->
 
 
 
-  it 'function level this', (done)->  
+  xit 'function level this', (done)->  
     runable_fn = ficent [
       (new_val, callback)-> 
         if new_val
@@ -1493,7 +1527,7 @@ describe 'context', ()->
   ###
     불가능하다. 자동으로 context가 계속 승계되면, 함수단위로 구분이 안가는 것은 물론, 의도치않게, context가 연결되어, 예상 불가능한 버그는 어찌할수가 없다. 따라서 안함.
   ###
-  # it 'this with fork - impossible', (done)->  
+  # xit 'this with fork - impossible', (done)->  
 
   #   action = ficent [
   #     (v, _toss)-> 

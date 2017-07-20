@@ -179,8 +179,13 @@ callContext = (flowFns, startArgs, cb)->
       call_next_fn err, args... 
   
     _tosser.err = (extend_fn)->
-      return (maybeError, args...)-> 
-        if _isError maybeError # Stupid Proof
+      return (maybeError, args...)->       
+        # if _isError maybeError 
+        ###
+          멍청이 방지가 더 문제가 되었다.
+          JS의 TYPE이 강력하지가 않아서, 분명히 error인데 피해간다. 쯥.
+        ###
+        if maybeError 
           return _tosser maybeError, args...
         try  
           extend_fn maybeError, args...
