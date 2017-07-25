@@ -58,6 +58,10 @@ _isObject = (obj)->
   return (!!obj && obj.constructor == Object);
 
 
+nextTick = (fn)->
+  setTimeout fn, 0
+if process
+  nextTick = process.nextTick
 
 _defaultCallbackFn = (err)->
   if err
@@ -333,13 +337,14 @@ ficent.series = (args...)->
         args = [args]
       debug 'mk Closure Fn with ', args
       return (_toss)->
-        debug 'inside par', args
-        debug 'call series - each task', '_toss._tossable?', _toss._tossable
-        taskFn args..., _toss.err (err, results_values...)->
-          if results_values.length is 1
-            results_values = results_values[0]
-          results_array.push results_values
-          _toss err
+        nextTick ()->
+          debug 'inside par', args
+          debug 'call series - each task', '_toss._tossable?', _toss._tossable
+          taskFn args..., _toss.err (err, results_values...)->
+            if results_values.length is 1
+              results_values = results_values[0]
+            results_array.push results_values
+            _toss err
 
     f = ficent.flow fns
 
@@ -360,7 +365,8 @@ ficent.parallel = (args...)->
         args = [args]
       debug 'mk Closure Fn with ', args
       return (next)-> 
-        taskFn args..., next
+        nextTick ()->
+          taskFn args..., next
     f = ficent.fork fns 
     f outCallback
  
