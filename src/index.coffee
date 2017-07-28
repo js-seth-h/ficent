@@ -60,7 +60,7 @@ _isObject = (obj)->
 
 nextTick = (fn)->
   setTimeout fn, 0
-if process
+if (typeof process isnt 'undefined') and (process.release.name is 'node') 
   nextTick = process.nextTick
 
 _defaultCallbackFn = (err)->
