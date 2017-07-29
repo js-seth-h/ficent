@@ -217,20 +217,21 @@ callContext = (flowFns, startArgs, cb)->
       context.fnInx = inx 
       _tosser null, args...
 
-    _tosser.getArgs = ()->
-      _tosser.args()
+
+    _tosser.getArgs =
     _tosser.args = ()->
       return _tosser.argv
       
     _tosser.setArgs = (args)->
-      _tosser.argv = args
-
+      _tosser.argv = args 
 
     _tosser.vars = ()->
+    # _tosser.items = ()->
       context.vars
 
-    _tosser.setVar = # DEPRECATED
-    _tosser.storeArgs = (names...)->
+    # _tosser.setVar = # DEPRECATED
+    _tosser.storeArgs =
+    _tosser.toItems = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args
           n = names[inx]
@@ -239,6 +240,11 @@ callContext = (flowFns, startArgs, cb)->
         _tosser err, args...
     # _tosser.getVar = (args...)->
     #   _tosser.var args...
+    _tosser.setItem = (key, value)->
+      context.vars[key] = value
+    _tosser.getItem = (key)->
+      return context.vars[key]
+
     _tosser.var = (args...)-> 
       if args.length is 2 
         [var_name, value] = args
