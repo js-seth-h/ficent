@@ -230,7 +230,7 @@ callContext = (flowFns, startArgs, cb)->
       context.vars
 
     # _tosser.setVar = # DEPRECATED
-    _tosser.storeArgs =
+    # _tosser.storeArgs =
     _tosser.toItems = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args

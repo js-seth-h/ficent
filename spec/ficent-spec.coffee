@@ -642,7 +642,7 @@ describe 'toss', ()->
         _toss null
       (_toss)->
         debug 'double toss', 'f g()'
-        g _toss.storeArgs 'g2'
+        g _toss.toItems 'g2'
       (_toss)->
         debug 'double toss', 'ag', _toss.getItem 'g'
         expect _toss.getItem('g')
@@ -727,15 +727,15 @@ describe 'ficent seq, par', (done)->
       # assert ctx.cnt is 5 , 'fork count 5 '
       done()
 
-describe 'storeArgs', (done)-> 
+describe 'toItems', (done)-> 
 
-  it 'storeArgs', (done)->
+  it 'toItems', (done)->
     async_ab = (callback)->
       callback null, 1, 2
     taskFn = ficent [
       (_toss)->
         _toss.setItem 'c', 20
-        async_ab _toss.storeArgs 'a', 'b'
+        async_ab _toss.toItems 'a', 'b'
       (err, _toss)->
         expect _toss.getItem 'a'
           .toEqual 1
@@ -749,13 +749,13 @@ describe 'storeArgs', (done)->
     taskFn()
 
 
-  it 'storeArgs  with Err', (done)->
+  it 'toItems  with Err', (done)->
     async_ab = (callback)->
       callback  new Error 'JUST'
     taskFn = ficent [
       (_toss)->
         _toss.setItem 'c', 20
-        async_ab _toss.storeArgs 'a', 'b'
+        async_ab _toss.toItems 'a', 'b'
       (err, _toss)->
         expect err
           .not.toEqual null
@@ -858,8 +858,8 @@ describe 'error', ()->
         .toEqual 9
       done()
 
-  it 'err intercept with storeArgs', (done)->
-    debug 'err intercept with storeArgs' 
+  it 'err intercept with toItems', (done)->
+    debug 'err intercept with toItems' 
     x = (callback)->
       _fn4 = ->
         callback new Error 'Just Error'
@@ -867,7 +867,7 @@ describe 'error', ()->
 
     (ficent [
       (_toss)->
-        x _toss.storeArgs 'data'
+        x _toss.toItems 'data'
       (err, _toss)->
         _toss null
       (_toss)->
@@ -878,8 +878,8 @@ describe 'error', ()->
       expect v
         .toEqual 9
       done()
-  it 'err intercept with storeArgs, fork', (done)->
-    debug 'err intercept with storeArgs, fork'
+  it 'err intercept with toItems, fork', (done)->
+    debug 'err intercept with toItems, fork'
 
     ext_func = ficent [
       (_toss)->
@@ -904,7 +904,7 @@ describe 'error', ()->
         setTimeout _toss, 100
       [
         (_toss)->
-          ext_func _toss.storeArgs 'data'
+          ext_func _toss.toItems 'data'
         (_toss)->
           ext_func _toss
       ]
@@ -914,7 +914,7 @@ describe 'error', ()->
         setTimeout _fn3, 100
       (err, _toss)->
         debug '======================================'
-        debug 'err intercept with storeArgs, fork:  expect not toEqual null =', err
+        debug 'err intercept with toItems, fork:  expect not toEqual null =', err
         expect err
           .not.toEqual null
         _toss null
