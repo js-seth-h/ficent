@@ -225,8 +225,8 @@ callContext = (flowFns, startArgs, cb)->
     _tosser.setArgs = (args)->
       _tosser.argv = args 
 
-    _tosser.vars = ()->
-    # _tosser.items = ()->
+    # _tosser.vars = ()->
+    _tosser.items = ()->
       context.vars
 
     # _tosser.setVar = # DEPRECATED
