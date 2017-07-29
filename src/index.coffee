@@ -242,6 +242,12 @@ callContext = (flowFns, startArgs, cb)->
     _tosser.getItem = (key)->
       return context.vars[key] 
 
+    _tosser.removeItem = (key)->
+      delete context.vars[key] 
+
+    _tosser.clear = ()->
+      context.vars = {}
+
     return _tosser
   do_cancel = ()->
     context.is_canceled = true
