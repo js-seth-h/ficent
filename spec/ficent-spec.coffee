@@ -247,7 +247,7 @@ describe 'goto, return', ()->
       'here'
       (_toss)->
         _toss.setItem 'g', true
-        _toss null, _toss.var 'ctx'
+        _toss null, _toss.getItem 'ctx'
     ]
     # f (req,res,next)
     f (err, obj)->
@@ -271,7 +271,7 @@ describe 'goto, return', ()->
         _toss null
       'here'
       (_toss)->
-        _toss.var('ctx').cnt++
+        _toss.getItem('ctx').cnt++
         _toss.setItem 'c', true
         _toss null
       (_toss)->
@@ -282,14 +282,14 @@ describe 'goto, return', ()->
         _toss null
       (_toss)->
 
-        f = _toss.var 'f'
+        f = _toss.getItem 'f'
         _toss.setItem 'f', true
         unless f
           return _toss.goto 'here'
         _toss null
       (_toss)->
         _toss.setItem 'g', true
-        _toss null, _toss.var 'ctx'
+        _toss null, _toss.getItem 'ctx'
     ]
     # f (req,res,next)
     f (err, obj)->
@@ -315,7 +315,7 @@ describe 'goto, return', ()->
       debug 'err ', err
       expect err
         .toEqual null
-      expect obj.var('a')
+      expect obj.getItem('a')
         .toEqual 99
       done()
 
@@ -496,7 +496,7 @@ describe 'toss', ()->
         toss.setItem 'tossValue', 9
         toss()
       (ctx, c1,c2,toss)->
-        ctx.tossed = toss.var('tossValue') is 9
+        ctx.tossed = toss.getItem('tossValue') is 9
         toss()
     ]
     # f (req,res,toss)
@@ -644,10 +644,10 @@ describe 'toss', ()->
         debug 'double toss', 'f g()'
         g _toss.storeArgs 'g2'
       (_toss)->
-        debug 'double toss', 'ag'
-        expect _toss.var('g')
+        debug 'double toss', 'ag', _toss.getItem 'g'
+        expect _toss.getItem('g')
           .toEqual null
-        _toss.setItem 'ag', _toss.var('a') * _toss.var('g2')
+        _toss.setItem 'ag', _toss.getItem('a') * _toss.getItem('g2')
         _toss null, _toss
       ]
 
@@ -655,7 +655,7 @@ describe 'toss', ()->
       debug 'double toss', 'outCall'
       expect err
         .toBe null
-      expect outCall.var 'ag'
+      expect outCall.getItem 'ag'
         .toEqual 11 * 12
       done()
     f outCall
@@ -737,11 +737,11 @@ describe 'storeArgs', (done)->
         _toss.setItem 'c', 20
         async_ab _toss.storeArgs 'a', 'b'
       (err, _toss)->
-        expect _toss.var 'a'
+        expect _toss.getItem 'a'
           .toEqual 1
-        expect _toss.var 'b'
+        expect _toss.getItem 'b'
           .toEqual 2
-        expect _toss.var 'c'
+        expect _toss.getItem 'c'
           .toEqual 20
         done()
     ]
@@ -798,7 +798,7 @@ describe 'isolate', ()->
       _toss null
     a ()->
     b = ficent (_toss)->
-      a = _toss.var 'a'
+      a = _toss.getItem 'a'
       debug '_toss.aa', _toss.aa
       expect a
         .not.toEqual 9

@@ -234,23 +234,24 @@ callContext = (flowFns, startArgs, cb)->
     _tosser.toItems = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args
-          n = names[inx]
-          if n
-            _tosser.var n, value
+          # n = names[inx]
+          if names[inx]
+            _tosser.setItem names[inx], value
         _tosser err, args...
     # _tosser.getVar = (args...)->
     #   _tosser.var args...
     _tosser.setItem = (key, value)->
       context.vars[key] = value
+
     _tosser.getItem = (key)->
       return context.vars[key]
 
-    _tosser.var = (args...)-> 
-      if args.length is 2 
-        [var_name, value] = args
-        context.vars[var_name] = value
-      else 
-        return context.vars[args[0]]
+    # _tosser.var = (args...)-> 
+    #   if args.length is 2 
+    #     [var_name, value] = args
+    #     context.vars[var_name] = value
+    #   else 
+    #     return context.vars[args[0]]
 
     return _tosser
   do_cancel = ()->
