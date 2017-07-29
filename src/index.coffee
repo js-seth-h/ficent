@@ -224,13 +224,10 @@ callContext = (flowFns, startArgs, cb)->
       
     _tosser.setArgs = (args)->
       _tosser.argv = args 
-
-    # _tosser.vars = ()->
+ 
     _tosser.items = ()->
       context.vars
-
-    # _tosser.setVar = # DEPRECATED
-    # _tosser.storeArgs =
+ 
     _tosser.toItems = (names...)->
       return _tosser.err (err, args...)->
         for value, inx in args
@@ -238,20 +235,12 @@ callContext = (flowFns, startArgs, cb)->
           if names[inx]
             _tosser.setItem names[inx], value
         _tosser err, args...
-    # _tosser.getVar = (args...)->
-    #   _tosser.var args...
+
     _tosser.setItem = (key, value)->
       context.vars[key] = value
 
     _tosser.getItem = (key)->
-      return context.vars[key]
-
-    # _tosser.var = (args...)-> 
-    #   if args.length is 2 
-    #     [var_name, value] = args
-    #     context.vars[var_name] = value
-    #   else 
-    #     return context.vars[args[0]]
+      return context.vars[key] 
 
     return _tosser
   do_cancel = ()->
