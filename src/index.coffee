@@ -258,14 +258,14 @@ callContext = (flowFns, startArgs, cb)->
     cur_fn = flowFns[context.fnInx]
     context.fnInx++ 
  
-    if _isArray cur_fn
-      cur_fn = createMuxFn cur_fn 
+    # if _isArray cur_fn
+    #   cur_fn = createMuxFn cur_fn 
 
     if _isString cur_fn
       return call_next_fn err, tossArgs...
 
     unless _isFunction cur_fn
-      context.outCallback new Error 'ficent only accept Function or Array or Label'
+      context.outCallback new Error 'ficent only accept Function or String as a Label'
       return        
 
     cur_fn_is_error_handler = (cur_fn.length is context.startArgs.length + 2) 
