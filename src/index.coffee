@@ -321,6 +321,12 @@ createSeqFn = (flowFns)->
 
 
    
+###  
+같은 명령 + 같은 데이터 = 단일 명령 - 없어도 되 
+같은 명령 + 다른 데이터 = SIMD  
+다른 명령 + 같은 데이터 = MISD - 그닥 쓸모가... 
+다른 명령 + 다른 데이터 = MIMD  
+### 
    
 ficent = (args...)->
   ficent.flow args...
