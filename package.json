@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling\n consists of high order function",
   "main": "lib",
-  "scripts": { 
+  "scripts": {
     "build": "coffee -c -b -o lib src  ",
     "clean": "rm -r lib",
     "prepublish": "npm run-script build",
@@ -33,6 +33,9 @@
     "debug": "^2"
   },
   "devDependencies": {
-    "coffee-script": "^1.7.1"
+    "coffee-coverage": "^2.0.1",
+    "coffee-script": "^1.7.1",
+    "mocha": "^3.5.0",
+    "nyc": "^11.1.0"
   }
 }

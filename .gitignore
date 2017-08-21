@@ -36,3 +36,6 @@ iisnode/
 public/cup/  
 components/
 lib/
+spec/
+coverage/
+.nyc_output/

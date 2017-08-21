@@ -1,3 +1,6 @@
 *.lnk
 test
 src
+spec
+coverage
+.nyc_output
