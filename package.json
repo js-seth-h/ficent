@@ -8,7 +8,7 @@
     "clean": "rm -r lib",
     "prepublish": "npm run-script build",
     "postpublish": "npm run-script clean",
-    "test": "jasmine-node --coffee  --verbose spec"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",

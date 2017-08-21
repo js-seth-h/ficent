@@ -1,8 +1,10 @@
-process.env.DEBUG = "test, -ficent"
+# process.env.DEBUG = "test, -ficent"
 ficent = require '../src'
 assert = require 'assert'
 util = require 'util'
 
+chai = require 'chai'
+expect = chai.expect
 fs = require 'fs'
 debug = require('debug')('test')
 
@@ -23,13 +25,13 @@ describe 'flow', ()->
       func2,
       (err, ctx, next)->
         debug  'arguments', arguments
-        expect err
-          .toEqual null
+        expect(err).to.not.exist
         # assert not util.isError err, 'no error'
-        expect ctx.a
-          .toBeTruthy()
-        expect ctx.b
-          .toBeTruthy()
+        expect(ctx.a).to.be.true
+        expect(ctx.b).to.be.true
+        #   .to.be.true
+        # expect ctx.b
+        #   .to.be.true
         done()
     ]
     fx ctx
@@ -46,9 +48,9 @@ describe 'flow', ()->
     fx ctx, (err)->
 
       debug '======================================'
-      debug 'run flow with single function:  expect not toEqual null =', err
+      debug 'run flow with single function:  expect not to.equal null =', err
       expect err
-        .not.toEqual null
+        .not.to.equal null
       done()
 
 
@@ -65,20 +67,20 @@ describe 'flow', ()->
     ctx =
       name : 'context base'
 
-
     _fn = ficent.flow [
       func1,
       func2
     ]
     _fn ctx, (err)->
       debug  'arguments', arguments
-      expect err
-        .toEqual null
+      expect(err).to.not.exist
+      # expect err
+      #   .to.equal null
       # assert not util.isError err, 'no error'
       expect ctx.a
-        .toBeTruthy()
+        .to.be.exist
       expect ctx.b
-        .toBeTruthy()
+        .to.be.exist
       done()
 
   it 'with no arguments ', (done)->
@@ -100,7 +102,7 @@ describe 'flow', ()->
       assert not util.isError err, 'no error'
       # assert ctx.a , "must exist"
       # assert ctx.b , "must exist"
-      expect(result).toEqual 11
+      expect(result).to.equal 11
 
       done()
   it 'run with multiple context arguments ', (done)->
@@ -253,9 +255,9 @@ describe 'goto, return', ()->
     f (err, obj)->
       debug 'err ', err
       expect err
-        .toEqual null
+        .to.equal null
       expect obj.cnt
-        .toEqual 0
+        .to.equal 0
       done()
 
 
@@ -295,9 +297,9 @@ describe 'goto, return', ()->
     f (err, obj)->
       debug 'err ', err
       expect err
-        .toEqual null
+        .to.equal null
       expect obj.cnt
-        .toEqual 2
+        .to.equal 2
       done()
 
 
@@ -314,9 +316,9 @@ describe 'goto, return', ()->
     f (err, obj)->
       debug 'err ', err
       expect err
-        .toEqual null
+        .to.equal null
       expect obj.getItem('a')
-        .toEqual 99
+        .to.equal 99
       done()
 
 describe 'fork', ()->
@@ -385,60 +387,59 @@ describe 'fork', ()->
     assert ctx.cnt is 3, 'fork count 3 '
     done()
 
-  it 'param', (done)->
+  # it 'param', (done)->
 
-    f = ficent [
-      [
-        (ctx, _toss)->
-          _toss null, 1, 2
-        (ctx, _toss)->
-          _toss null, 'a', 'b'
-      ]
-      (ctx, _toss)->
-        debug 'param', _toss
-        debug 'param', _toss.args()
-        _toss null, _toss.args()...
-    ]
-    f (err, result... )->
-      # assert ctx.cnt is 5 , 'fork count 5 '
-      debug 'params result', err, result...
-      # assert not util.isError err, 'no error'
-      expect result
-        .toEqual [ [1,2], ['a', 'b']]
-      done()
+  #   f = ficent [
+  #     [
+  #       (ctx, _toss)->
+  #         _toss null, 1, 2
+  #       (ctx, _toss)->
+  #         _toss null, 'a', 'b'
+  #     ]
+  #     (ctx, _toss)->
+  #       debug '_toss', _toss
+  #       debug 'args', _toss.args()
+  #       _toss null, _toss.args()...
+  #   ]
+  #   f (err, result... )->
+  #     # assert ctx.cnt is 5 , 'fork count 5 '
+  #     debug 'arguments of callback', arguments
+  #     # assert not util.isError err, 'no error'
+  #     expect(result).to.deep.equal [ [1,2], ['a', 'b']]
+  #     done()
 
-describe 'flow  - forkjoin', ()->
-  it 'base fork join ', (done)->
-    ctx = {}
-    f = ficent.flow [ [func1, func2, (ctx,next)->
-      ctx.zzz = 9
-      debug 'fj', ctx
-      next()
-     ] ]
+# describe 'flow  - forkjoin', ()->
+#   it 'base fork join ', (done)->
+#     ctx = {}
+#     f = ficent.flow [ [func1, func2, (ctx,next)->
+#       ctx.zzz = 9
+#       debug 'fj', ctx
+#       next()
+#      ] ]
 
-    f ctx, (err)->
-      debug 'errs, ctx', err, ctx
-      assert not util.isError err, 'no error'
-      assert ctx.a , "must exist"
-      assert ctx.b , "must exist"
-      done()
+#     f ctx, (err)->
+#       debug 'errs, ctx', err, ctx
+#       assert not util.isError err, 'no error'
+#       assert ctx.a , "must exist"
+#       assert ctx.b , "must exist"
+#       done()
 
-  it 'with Err ', (done)->
+#   it 'with Err ', (done)->
 
-    ctx = {}
+#     ctx = {}
 
-    f = ficent.flow [ [func1, func2, (ctx, next)->
-        next new Error 'fire Err'
-      ] ]
+#     f = ficent.flow [ [func1, func2, (ctx, next)->
+#         next new Error 'fire Err'
+#       ] ]
 
-    # f (req,res,next)
-    f ctx, (err)->
-      debug 'errs, ctx', err, ctx
-      assert util.isError err, 'error'
-      assert ctx.a , "must exist"
-      assert ctx.b , "must exist"
+#     # f (req,res,next)
+#     f ctx, (err)->
+#       debug 'errs, ctx', err, ctx
+#       assert util.isError err, 'error'
+#       assert ctx.a , "must exist"
+#       assert ctx.b , "must exist"
 
-      done()
+#       done()
 
 
 
@@ -503,7 +504,7 @@ describe 'toss', ()->
     f ctx, ctx1, ctx2, (err)->
       debug  'toss data', arguments
       expect err
-        .toBe undefined
+        .to.equal undefined
 
       assert ctx.tossed is true, 'must be tossed'
 
@@ -522,7 +523,7 @@ describe 'toss', ()->
     f (err)->
       debug err
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
   it 'toss err from oth ', (done)->
@@ -554,9 +555,9 @@ describe 'toss', ()->
     f (err)->
       debug 'out callback err?', err
       expect check_board.oth_cb
-        .not.toBe true
+        .not.to.equal true
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
 
@@ -573,7 +574,7 @@ describe 'toss', ()->
     f (err)->
       debug 'out callback err?', err
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
   f = (callback)-> callback null, 5
@@ -588,7 +589,7 @@ describe 'toss', ()->
 
       debug 'err catch no err', err
       expect err
-        .toBe null
+        .to.equal null
       done()
 
   it 'catch ', (done)->
@@ -600,7 +601,7 @@ describe 'toss', ()->
 
       debug 'catch ', err
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
 
@@ -613,7 +614,7 @@ describe 'toss', ()->
 
       debug 'catch  inside', err
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
 
@@ -625,7 +626,7 @@ describe 'toss', ()->
     a (err)->
       debug 'toss before callbacked ', err
       expect err
-        .not.toBe null
+        .not.to.equal null
       done()
 
   it 'double toss', (done)->
@@ -646,17 +647,18 @@ describe 'toss', ()->
       (_toss)->
         debug 'double toss', 'ag', _toss.getItem 'g'
         expect _toss.getItem('g')
-          .toEqual null
+          .to.not.exist
         _toss.setItem 'ag', _toss.getItem('a') * _toss.getItem('g2')
         _toss null, _toss
       ]
 
     outCall = (err, outCall)->
-      debug 'double toss', 'outCall'
-      expect err
-        .toBe null
+      debug 'double toss', 'outCall', arguments
+      expect(err).to.not.exist
+      # expect err
+      #   .to.equal null
       expect outCall.getItem 'ag'
-        .toEqual 11 * 12
+        .to.equal 11 * 12
       done()
     f outCall
 
@@ -678,25 +680,26 @@ describe 'double callback defence', ()->
     fx (err)->
 
       debug '======================================'
-      debug 'err when double callback:  expect not toEqual null =', err
+      debug 'err when double callback:  expect not to.equal null =', err
       debug 'err ', err
       expect err
-        .not.toEqual null
+        .not.to.equal null
       done()
 
 
 describe 'ficent seq, par', (done)->
 
-  it 'par', (done)->
-    input = [3, 6, 9].map (x)-> [x]
-    taskFn = ficent.par (num, next)->
+  it 'ficent.par', (done)->
+    arg_list = [3, 6, 9].map (x)-> [x]
+    taskFn = (num, next)->
       debug 'par in', num
       next null, num * 1.5
-    taskFn input, (err, results...)->
+    ficent.par(taskFn) arg_list, (err, results...)->
       debug 'par, callback', arguments
+      debug 'par, callback results=', results
       # assert ctx.cnt is 5 , 'fork count 5 '
       expect results
-        .toEqual [[4.5], [9], [13.5]]
+        .to.deep.equal [[4.5], [9], [13.5]]
       done()
 
   it 'ser', (done)->
@@ -709,7 +712,7 @@ describe 'ficent seq, par', (done)->
     taskFn input, (err, numbers)->
       debug 'ser, callback', results
       expect numbers
-        .toEqual [6, 12, 18]
+        .to.deep.equal [6, 12, 18]
       # assert ctx.cnt is 5 , 'fork count 5 '
       done()
 
@@ -723,7 +726,7 @@ describe 'ficent seq, par', (done)->
     taskFn input, (err, numbers)->
       debug 'ser, callback', results
       expect numbers
-        .toEqual [[6, 30], [12, 60], [18, 90]]
+        .to.deep.equal [[6, 30], [12, 60], [18, 90]]
       # assert ctx.cnt is 5 , 'fork count 5 '
       done()
 
@@ -738,11 +741,11 @@ describe 'toItems', (done)->
         async_ab _toss.toItems 'a', 'b'
       (err, _toss)->
         expect _toss.getItem 'a'
-          .toEqual 1
+          .to.equal 1
         expect _toss.getItem 'b'
-          .toEqual 2
+          .to.equal 2
         expect _toss.getItem 'c'
-          .toEqual 20
+          .to.equal 20
         done()
     ]
 
@@ -758,7 +761,7 @@ describe 'toItems', (done)->
         async_ab _toss.toItems 'a', 'b'
       (err, _toss)->
         expect err
-          .not.toEqual null
+          .not.to.equal null
         done()
     ]
 
@@ -801,9 +804,9 @@ describe 'isolate', ()->
       a = _toss.getItem 'a'
       debug '_toss.aa', _toss.aa
       expect a
-        .not.toEqual 9
+        .not.to.equal 9
       expect _toss.aa
-        .not.toEqual 9
+        .not.to.equal 9
         done()
       _toss null
     b ()->
@@ -824,39 +827,39 @@ describe 'error', ()->
         _toss null, 9
     ]) (err, v)->
       expect err
-        .toEqual null
+        .to.equal null
       expect v
-        .toEqual 9
+        .to.equal 9
       done()
 
 
 
-  it 'err intercept with fork', (done)->
-    debug 'err intercept with fork'
+  # it 'err intercept with fork', (done)->
+  #   debug 'err intercept with fork'
 
-    (ficent [
-      (_toss)->
-        setTimeout _toss, 100
-      [
-        (_toss)->
-          _fn9 = ->
-            _toss new Error 'Just Error'
-          setTimeout _fn9, 100
-        (_toss)->
-          _fn10 = ->
-            _toss null
-          setTimeout _fn10, 100
-      ]
-      (err, _toss)->
-        _toss null
-      (_toss)->
-        _toss null, 9
-    ]) (err, v)->
-      expect err
-        .toEqual null
-      expect v
-        .toEqual 9
-      done()
+  #   (ficent [
+  #     (_toss)->
+  #       setTimeout _toss, 100
+  #     [
+  #       (_toss)->
+  #         _fn9 = ->
+  #           _toss new Error 'Just Error'
+  #         setTimeout _fn9, 100
+  #       (_toss)->
+  #         _fn10 = ->
+  #           _toss null
+  #         setTimeout _fn10, 100
+  #     ]
+  #     (err, _toss)->
+  #       _toss null
+  #     (_toss)->
+  #       _toss null, 9
+  #   ]) (err, v)->
+  #     expect err
+  #       .to.equal null
+  #     expect v
+  #       .to.equal 9
+  #     done()
 
   it 'err intercept with toItems', (done)->
     debug 'err intercept with toItems' 
@@ -874,59 +877,59 @@ describe 'error', ()->
         _toss null, 9
     ]) (err, v)->
       expect err
-        .toEqual null
+        .to.equal null
       expect v
-        .toEqual 9
+        .to.equal 9
       done()
-  it 'err intercept with toItems, fork', (done)->
-    debug 'err intercept with toItems, fork'
+  # it 'err intercept with toItems, fork', (done)->
+  #   debug 'err intercept with toItems, fork'
 
-    ext_func = ficent [
-      (_toss)->
-        setTimeout _toss, 100
-      (_toss)->
-        cnt = 0
-        (ficent [
-          (_toss)->
-            cnt++
-            _fn2 = ->
-              if cnt < 2
-                return _toss.goto 'first'
-              debug 'throw error'
-              _toss new Error 'Just Error'
-            setTimeout _fn2, 100
-        ]) _toss
-      (err, _toss)->
-        _toss err
-    ]
-    (ficent [
-      (_toss)->
-        setTimeout _toss, 100
-      [
-        (_toss)->
-          ext_func _toss.toItems 'data'
-        (_toss)->
-          ext_func _toss
-      ]
-      (_toss)->
-        _fn3 = ->
-          _toss null, 'a'
-        setTimeout _fn3, 100
-      (err, _toss)->
-        debug '======================================'
-        debug 'err intercept with toItems, fork:  expect not toEqual null =', err
-        expect err
-          .not.toEqual null
-        _toss null
-      (_toss)->
-        _toss null, 9
-    ]) (err, v)->
-      debug 'result =', err, v
-      expect err
-        .toEqual null
-      expect v
-        .toEqual 9
-      done()
+  #   ext_func = ficent [
+  #     (_toss)->
+  #       setTimeout _toss, 100
+  #     (_toss)->
+  #       cnt = 0
+  #       (ficent [
+  #         (_toss)->
+  #           cnt++
+  #           _fn2 = ->
+  #             if cnt < 2
+  #               return _toss.goto 'first'
+  #             debug 'throw error'
+  #             _toss new Error 'Just Error'
+  #           setTimeout _fn2, 100
+  #       ]) _toss
+  #     (err, _toss)->
+  #       _toss err
+  #   ]
+  #   (ficent [
+  #     (_toss)->
+  #       setTimeout _toss, 100
+  #     [
+  #       (_toss)->
+  #         ext_func _toss.toItems 'data'
+  #       (_toss)->
+  #         ext_func _toss
+  #     ]
+  #     (_toss)->
+  #       _fn3 = ->
+  #         _toss null, 'a'
+  #       setTimeout _fn3, 100
+  #     (err, _toss)->
+  #       debug '======================================'
+  #       debug 'err intercept with toItems, fork:  expect not to.equal null =', err
+  #       expect err
+  #         .not.to.equal null
+  #       _toss null
+  #     (_toss)->
+  #       _toss null, 9
+  #   ]) (err, v)->
+  #     debug 'result =', err, v
+  #     expect err
+  #       .to.equal null
+  #     expect v
+  #       .to.equal 9
+  #     done()
 
 
 
@@ -947,7 +950,7 @@ describe 'cancel', ()->
     call.cancel()
     chk = ()->
       expect test
-        .toEqual 9
+        .to.equal 9
       done()
     setTimeout chk, 500
   it 'fork cancel', (done)->
@@ -974,9 +977,9 @@ describe 'cancel', ()->
     call.cancel()
     chk = ()->
       expect test
-        .toEqual 9
+        .to.equal 9
       expect test2
-        .toEqual -9
+        .to.equal -9
       done()
     setTimeout chk, 500
 
@@ -999,11 +1002,11 @@ describe 'context', ()->
 
     action 8, (err, mul, v)->
       expect err
-        .toEqual null
+        .to.equal null
       expect mul
-        .toEqual 7 * 8
+        .to.equal 7 * 8
       expect v
-        .toEqual 7
+        .to.equal 7
       done()
 
 
@@ -1021,18 +1024,18 @@ describe 'context', ()->
 
     runable_fn 7, (err, val)->
       expect err
-        .toEqual null
+        .to.equal null
       expect val
-        .toEqual 7
+        .to.equal 7
       runable_fn undefined, (err, val)->
         expect err
-          .toEqual null
+          .to.equal null
         expect val
-          .toEqual undefined
+          .to.equal undefined
 
         runable_fn 11, (err, val)->
           expect err
-            .toEqual null
+            .to.equal null
           expect val
-            .toEqual 11
+            .to.equal 11
           done()
