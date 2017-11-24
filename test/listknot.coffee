@@ -1,5 +1,4 @@
-knot = require '../lib/knot'
-duct = require '../lib/duct'
+{duct, knot} = require '../lib/'
 
 ListKnot = knot.List 
 chai = require 'chai'
@@ -220,3 +219,30 @@ describe 'ListKnot setHandler', ()->
         resut = result.sort (a,b)->  a - b 
         expect(resut ).be.eql [0...10].map (x)-> x * x
         done()
+
+describe '.wait', ()->
+  it 'wait by NumKnot', (done)-> 
+
+    result = []
+    box = new ListKnot()
+      .consecution()
+      .all()
+      .parallel()
+      .pushAll [0...10] 
+      
+    box.handler
+      .map (cur)-> cur * cur
+      .feedback (feedback, cur)->
+        result.push cur
+        num.inc()
+
+    num = new knot.Num()
+    num.wait 
+      if : (knot)->
+        debug 'knot.getStatus', knot.getStatus()
+        knot.getStatus() is 10 
+      then: ()->
+        resut = result.sort (a,b)->  a - b 
+        expect(resut ).be.eql [0...10].map (x)-> x * x
+        done()
+    

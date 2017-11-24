@@ -118,18 +118,42 @@ _proto = (klass, dict)->
 
 class RefKnot
   constructor:()->
+    @_triggers = []
     @status = null
     @reset()
     @serial()
-  getStatus: ()-> @status
-  setStatus: (@status)-> 
-    
   reset: ()->
-    @trigger = duct() 
+    @reactivity = duct() 
     @puller = duct() # 데이터 추출 루틴
     @outer = duct() # 방출 제어 루틴.
-    @handler = duct() # 개별 방출 핸들러
-    return this
+    @handler = duct() # 개별 방출 핸들러 
+    
+  getStatus: ()-> @status
+  setStatus: (@status)-> 
+    @_trigging()
+   
+  
+  _trigging: ()->
+    self = this
+  
+    debug 'check _trigging', @_triggers, @constructor.name
+    @_triggers = _.filter @_triggers, (cfg)->      
+      debug 'call cfg.if', cfg.if 
+      if cfg.if self
+        _ASAP ()-> cfg.then self
+        return false if cfg.once is true
+      return true 
+          
+  wait: (wait_cfg)->
+    wait_cfg.if = wait_cfg.until unless wait_cfg.if
+    wait_cfg.once = true
+    @_triggers.push wait_cfg
+
+  when: (when_cfg)->        
+    @_triggers.push when_cfg
+      
+  manual: (callback)->
+    @pullOut callback
     
   pullOut: (callback)->
     self = this
@@ -142,7 +166,8 @@ class RefKnot
         debug 'call outter'
         self.outer data, done
       .do (data)->
-        self.trigger 'after-pullout', data
+        debug 'reactivity; after-pullout'
+        self.reactivity 'after-pullout', data
     _fn (err)->
       if callback
         callback err, self 
@@ -154,13 +179,12 @@ class RefKnot
     return this
   doHandling: (data, callback)->
     @handler data, callback
-    return this
+    return this 
   
-
   # auto reactivity 계열 
   consecution : ()->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
       .do (timing_name)->
         return if timing_name isnt 'after-change'
         debug 'consecution call pullOut'
@@ -169,7 +193,7 @@ class RefKnot
 
   asap: ()->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
       .do (timing_name)->
         return if timing_name isnt 'after-change'
         _ASAP ()-> self.pullOut()
@@ -177,7 +201,7 @@ class RefKnot
 
   backPressure: (msec)->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
       .do (timing_name, data)->
         return if timing_name isnt 'after-pullout'
         _pullout = ()-> self.pullOut()
@@ -188,7 +212,7 @@ class RefKnot
 
   interval : (msec)->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
     _tick = ()->
       self.pullOut()
     setInterval _tick, msec
@@ -196,7 +220,7 @@ class RefKnot
 
   throttle: (msec)->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
       .do (timing_name)->
         return if timing_name isnt 'after-change'
         return if self.tid
@@ -209,7 +233,7 @@ class RefKnot
 
   debounce : (msec)->
     self = this
-    self.trigger.clear()
+    self.reactivity.clear()
       .do (timing_name)->
         return if timing_name isnt 'after-change'
         return if self.tid
@@ -267,11 +291,13 @@ class ListKnot extends RefKnot
     
   push: (args...)->
     @getStatus().push args...  
-    @trigger("after-change")
+    @reactivity("after-change")
+    @_trigging()
     return this
   pushAll: (list)->
     @getStatus().push list...  
-    @trigger("after-change")
+    @reactivity("after-change")
+    @_trigging()
     return this
   all: ()->
     self = this
@@ -302,16 +328,17 @@ class DictionaryKnot extends RefKnot
     @setStatus {} 
   set: (key, value)->
     _.set(@getStatus(), key, value)    
-    @trigger("after-change")
+    @reactivity("after-change")
+    @_trigging()
   get: (key, value)->
     _.get(@getStatus(), key)
-    @trigger("after-change")
     
 class NumKnot extends RefKnot 
   constructor: ()->
     super()
     @setStatus 0 
-  inc: (diff)->
+  inc: (diff = 1)->
+    debug 'inc', diff
     @setStatus @getStatus() + diff 
   current: ()->
     self = this
