@@ -1,13 +1,11 @@
 {
   "name": "ficent",
-  "version": "3.0.0",
-  "description": "flow control for high performance, parallel, synchronous, easy to use, bisiness logic-centeric, robust error handling\n consists of high order function",
-  "main": "lib",
+  "version": "4.0.0",
+  "description": "",
+  "main": "index",
   "scripts": {
-    "build": "coffee -c -b -o lib src  ",
-    "clean": "rm -r lib",
+    "build": "coffee -c -b -o lib-js lib  ",
     "prepublish": "npm run-script build",
-    "postpublish": "npm run-script clean",
     "test": "mocha"
   },
   "repository": {
@@ -15,13 +13,11 @@
     "url": "git://github.com/js-seth-h/ficent.git"
   },
   "keywords": [
-    "web",
-    "connect",
-    "middleware",
+    "reactive",
+    "high-order function",
     "flow",
-    "rack",
     "async",
-    "next"
+    "parallel"
   ],
   "author": "js.seth.h@gmail.com",
   "license": "MIT",
@@ -30,9 +26,11 @@
   },
   "homepage": "https://github.com/js-seth-h/ficent",
   "dependencies": {
-    "debug": "^2"
+    "debug": "^2",
+    "lodash": "^4.17.4"
   },
   "devDependencies": {
+    "chai": "^4.1.1",
     "coffee-coverage": "^2.0.1",
     "coffee-script": "^1.7.1",
     "mocha": "^3.5.0",
