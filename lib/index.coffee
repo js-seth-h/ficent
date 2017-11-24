@@ -8,3 +8,4 @@ module.exports = exports =
   ListKnot: Knot.List
   NumKnot: Knot.Num
   DictionaryKnot: Knot.Dictionary
+  Ficent: require './ficent' 
