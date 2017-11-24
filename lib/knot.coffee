@@ -35,6 +35,7 @@ Knot 공통. = RefKnot
 
 
   reactivity 계열 - pullout호출을 자동화 시킴
+    * noReact : 반응하지 마라.
     * consecution: 들어오는 즉시 나감. 처리함수의 연속.
     * asap : 가능한 빨리 큐에서 꺼냄. 비동기
     * debounce: 지연된 시간내의 것을 모아서.
@@ -131,7 +132,7 @@ class RefKnot
   getStatus: ()-> @status
   setStatus: (@status)-> 
     @_trigging()
-   
+  
   
   _trigging: ()->
     self = this
@@ -151,9 +152,7 @@ class RefKnot
 
   when: (when_cfg)->        
     @_triggers.push when_cfg
-      
-  manual: (callback)->
-    @pullOut callback
+  
     
   pullOut: (callback)->
     self = this
@@ -182,6 +181,11 @@ class RefKnot
     return this 
   
   # auto reactivity 계열 
+  noReact: ()->
+    self = this
+    self.reactivity.clear() 
+    return self
+    
   consecution : ()->
     self = this
     self.reactivity.clear()
