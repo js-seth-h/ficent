@@ -1,6 +1,5 @@
 *.lnk
-test
-src
+test 
 spec
 coverage
 .nyc_output
