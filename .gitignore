@@ -37,3 +37,4 @@ public/cup/
 components/ 
 coverage/
 .nyc_output/
+lib-js/

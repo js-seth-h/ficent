@@ -1,11 +1,11 @@
 
 
-Knot = require './knot'
+knot = require './knot'
 module.exports = exports = 
-  Knot: Knot  
-  Duct: require './duct' 
-  RefKnot: Knot.Ref
-  ListKnot: Knot.List
-  NumKnot: Knot.Num
-  DictionaryKnot: Knot.Dictionary
-  Ficent: require './ficent' 
+  duct: require './duct' 
+  knot: knot  
+  RefKnot: knot.Ref
+  ListKnot: knot.List
+  NumKnot: knot.Num
+  DictionaryKnot: knot.Dictionary
+  ficent: require './ficent' 
