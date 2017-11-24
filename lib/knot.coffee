@@ -1,9 +1,11 @@
+
 _ = require 'lodash'
 duct = require './duct'
+Semaphore = require './semaphore'
+
 debug = require('debug')('knot')
 
-###
-
+### 
 Knot는 프로그램 처리 흐름상의 결절이다.
 시작점이자 끝점으로 볼수있으며,
 상태를 확인할수 있다.
@@ -97,7 +99,7 @@ knot = RefKnot()
   # .noPuller() 
   # .serial() / .parallel()
   
-knot.puller.do (box)-> [ box.getStatus().next()  ]
+knot.puller.do (self)-> [ self.getStatus().next()  ]
 knot.handler.do (data)-> ....
   .await (data, done)-> ...
   
@@ -113,4 +115,215 @@ if process?.nextTick?
 _proto = (klass, dict)->
   for own key, v of dict
     klass.prototype[key] = v
+
+class RefKnot
+  constructor:()->
+    @status = null
+    @reset()
+    @serial()
+  getStatus: ()-> @status
+  setStatus: (@status)-> 
+    
+  reset: ()->
+    @trigger = duct() 
+    @puller = duct() # 데이터 추출 루틴
+    @outer = duct() # 방출 제어 루틴.
+    @handler = duct() # 개별 방출 핸들러
+    return this
+    
+  pullOut: (callback)->
+    self = this
+    _fn = duct()
+      .await "data", (done)->
+        debug 'call puller'
+        self.puller self, done
+      .load "data"
+      .await (data, done)->
+        debug 'call outter'
+        self.outer data, done
+      .do (data)->
+        self.trigger 'after-pullout', data
+    _fn (err)->
+      if callback
+        callback err, self 
+    return this
+
+  setHandler: (@handler)->
+    return this
+  setDataHandler: (@handler)->
+    return this
+  doHandling: (data, callback)->
+    @handler data, callback
+    return this
+  
+
+  # auto reactivity 계열 
+  consecution : ()->
+    self = this
+    self.trigger.clear()
+      .do (timing_name)->
+        return if timing_name isnt 'after-change'
+        debug 'consecution call pullOut'
+        self.pullOut()
+    return self
+
+  asap: ()->
+    self = this
+    self.trigger.clear()
+      .do (timing_name)->
+        return if timing_name isnt 'after-change'
+        _ASAP ()-> self.pullOut()
+    return self
+
+  backPressure: (msec)->
+    self = this
+    self.trigger.clear()
+      .do (timing_name, data)->
+        return if timing_name isnt 'after-pullout'
+        _pullout = ()-> self.pullOut()
+        if data.length > 0
+          _ASAP _pullout
+        else
+          setTimeout _pullout, msec
+
+  interval : (msec)->
+    self = this
+    self.trigger.clear()
+    _tick = ()->
+      self.pullOut()
+    setInterval _tick, msec
+    return self
+
+  throttle: (msec)->
+    self = this
+    self.trigger.clear()
+      .do (timing_name)->
+        return if timing_name isnt 'after-change'
+        return if self.tid
+        _dfn = ()->
+          self.tid = null
+          self.pullOut()
+        self.tid = setTimeout _dfn, msec
+        self.pullOut()
+    return self
+
+  debounce : (msec)->
+    self = this
+    self.trigger.clear()
+      .do (timing_name)->
+        return if timing_name isnt 'after-change'
+        return if self.tid
+        _dfn = ()->
+          self.tid = null
+          self.pullOut()
+        self.tid = setTimeout _dfn, msec
+    return self
+      
+  #outter 계열   
+  par : ()-> @parallel()
+  parallel : ()->
+    self = this
+    self.outer.clear().await (data, done)->
+      _fn = duct() 
+      _.forEach data, (datum, inx)->
+        _fn.async inx, (done)->
+          self.doHandling datum, done
+      _fn.wait()
+      _fn done
+    return self
+
+  ser : ()-> @serial()
+  serial : ()->
+    self = this
+    self.outer.clear().await (data, done)->
+      _fn = duct() 
+      _.forEach data, (datum, inx)->
+        _fn.await inx, (done)->
+          self.doHandling datum, done
+      _fn done
+    return self
  
+  nPar : (concurrent)-> @nParallel concurrent
+  nParallel : (concurrent)->
+    self = this
+    s = new Semaphore concurrent
+    self.outer.clear().await (data, done)->
+      _fn = duct() 
+      _.forEach data, (datum, inx)->
+        _fn.async inx, (done)->
+          s.enter ()->
+            self.doHandling datum, (err)->
+              s.leave()
+              done err
+      _fn.wait()
+      _fn done
+    return self
+
+class ListKnot extends RefKnot 
+  constructor: ()->
+    super()
+    @setStatus []
+    @all()
+    
+  push: (args...)->
+    @getStatus().push args...  
+    @trigger("after-change")
+    return this
+  pushAll: (list)->
+    @getStatus().push list...  
+    @trigger("after-change")
+    return this
+  all: ()->
+    self = this
+    self.puller.clear().do (knot)->
+      list = knot.getStatus()
+      knot.setStatus []
+      @feedback.reset list
+    return self
+  latest: ()->
+    self = this
+    self.puller.clear().do (knot)->
+      list = knot.getStatus()
+      knot.setStatus []
+      @feedback.reset [ _.last list ]
+    return self
+  reduce: (reduce_fn)->
+    self = this
+    self.puller.clear().do (knot)->
+      list = knot.getStatus()
+      knot.setStatus []
+      val = reduce_fn list
+      @feedback.reset [val]
+    return self
+    
+class DictionaryKnot extends RefKnot 
+  constructor: ()->
+    super()
+    @setStatus {} 
+  set: (key, value)->
+    _.set(@getStatus(), key, value)    
+    @trigger("after-change")
+  get: (key, value)->
+    _.get(@getStatus(), key)
+    @trigger("after-change")
+    
+class NumKnot extends RefKnot 
+  constructor: ()->
+    super()
+    @setStatus 0 
+  inc: (diff)->
+    @setStatus @getStatus() + diff 
+  current: ()->
+    self = this
+    self.puller.clear().do (self)->
+      val = self.getStatus()
+      @feedback.reset [val]
+    return self
+    
+    
+  
+module.exports = exports = 
+  Ref : RefKnot
+  List : ListKnot
+  Num : NumKnot
+  Dictionary : DictionaryKnot
