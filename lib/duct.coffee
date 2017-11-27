@@ -110,6 +110,10 @@ createExecuteContext = (internal_fns, _callback)->
       return _KV_[name]
     remember: (name, value)->
       _KV_[name] = value
+    remembers: (obj)->
+      for own name, value of obj
+        _KV_[name] = value
+    
     createSynchronizePoint :(name_at_group)->
       _resolve = _reject = null
       p = new Promise (resolve, reject)->
@@ -160,15 +164,25 @@ applyDuctBuilder = (duct)->
   duct.clear = ()->
     duct._internal_fns = []
     return duct
-  duct.load = (var_name)->
+  duct.load = (var_names...)->
     duct._internal_fns.push (exe_ctx)->
-      val = exe_ctx.recall var_name
-      exe_ctx.next new Args val
+      values = exe_ctx.recall()
+      if var_names.length > 0
+        args = _.map var_names, (v)-> values[v]
+      else
+        args= [values]
+      exe_ctx.next new Args args...
     return duct
-  duct.store = (var_name)->
+  duct.store = (var_names...)->
     duct._internal_fns.push (exe_ctx)->
-      exe_ctx.remember var_name, exe_ctx.curArgs.get 0
-      exe_ctx.remember var_name + "[]", exe_ctx.curArgs.args
+      for var_name, inx in var_names
+        exe_ctx.remember var_name, exe_ctx.curArgs.get inx
+      exe_ctx.remember var_names[0] + "[]", exe_ctx.curArgs.args
+      exe_ctx.next new Args()
+    return duct
+  duct.var = (var_name, init)->
+    duct._internal_fns.push (exe_ctx)->
+      exe_ctx.remember var_name, init
       exe_ctx.next new Args()
     return duct
 
@@ -271,7 +285,7 @@ applyDuctBuilder = (duct)->
   duct.pwait = (name_at_group, fn)->
     unless fn
       fn = name_at_group
-      name_at_group = duct._internal_fns.length.toString() 
+      name_at_group = duct._internal_fns.length.toString()
     duct.promise name_at_group, fn
     duct.wait name_at_group
     return duct
