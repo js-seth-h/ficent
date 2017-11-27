@@ -221,44 +221,6 @@ applyDuctBuilder = (duct)->
     duct._internal_fns.push _catcher
     return duct
 
-  duct.async = (name_at_group, fn)->
-    unless fn
-      fn = name_at_group
-      name_at_group = duct._internal_fns.length.toString()
-    duct._internal_fns.push (exe_ctx)->
-      a_done = exe_ctx.createSynchronizePoint name_at_group
-
-      fn.call exe_ctx, exe_ctx.curArgs.args..., a_done
-      exe_ctx.resume()
-    return duct
-
-  duct.await = (name_at_group, fn)->
-    unless fn
-      fn = name_at_group
-      name_at_group = duct._internal_fns.length.toString()
-      # console.log 'anonymous_awiat', name_at_group, fn
-    duct._internal_fns.push (exe_ctx)->
-      a_done = exe_ctx.createSynchronizePoint name_at_group
-      fn.call exe_ctx, exe_ctx.curArgs.args..., a_done
-      _ok = ()->
-        exe_ctx.resume()
-      _fail = (err)->
-        exe_ctx.error = err
-        exe_ctx.resume()
-
-      [name, group] =_.split name_at_group, '@'
-      task_promise = exe_ctx.getMergedPromise name
-      task_promise.then _ok, _fail
-    return duct
-
-  # duct.makePromise =
-  duct.promise = (name_at_group, fn)->
-    duct._internal_fns.push (exe_ctx)->
-      promise = fn.call exe_ctx, exe_ctx.curArgs.args...
-      exe_ctx.trackingPromise name_at_group, promise
-      exe_ctx.resume()
-    return duct
-
   duct.wait = (args...)->
     timeout = null
     if _.isNumber args[0]
@@ -277,6 +239,43 @@ applyDuctBuilder = (duct)->
         exe_ctx.resume()
       p.then _ok, _fail
     return duct
+
+  duct.async = (name_at_group, fn)->
+    unless fn
+      fn = name_at_group
+      name_at_group = duct._internal_fns.length.toString()
+    duct._internal_fns.push (exe_ctx)->
+      a_done = exe_ctx.createSynchronizePoint name_at_group
+
+      fn.call exe_ctx, exe_ctx.curArgs.args..., a_done
+      exe_ctx.resume()
+    return duct
+
+  duct.await = (name_at_group, fn)->
+    unless fn
+      fn = name_at_group
+      name_at_group = duct._internal_fns.length.toString()
+
+    duct.async name_at_group, fn
+    duct.wait name_at_group
+    return duct
+
+  # duct.makePromise =
+  duct.promise = (name_at_group, fn)->
+    duct._internal_fns.push (exe_ctx)->
+      promise = fn.call exe_ctx, exe_ctx.curArgs.args...
+      exe_ctx.trackingPromise name_at_group, promise
+      exe_ctx.resume()
+    return duct
+
+  duct.pwait = (name_at_group, fn)->
+    unless fn
+      fn = name_at_group
+      name_at_group = duct._internal_fns.length.toString() 
+    duct.promise name_at_group, fn
+    duct.wait name_at_group
+    return duct
+
 
   duct.feedback = (fn)->
     duct._internal_fns.push (exe_ctx)->
@@ -306,7 +305,7 @@ applyDuctBuilder = (duct)->
       else
         exe_ctx.resume()
     return duct
- 
+
 applyInvokeFn = (duct)->
   duct.invoke = (inputs...)->
     _callback = undefined
@@ -350,6 +349,6 @@ Duct = ()->
   applyDuctBuilder duct
   duct.clear()
   return duct
- 
+
 Duct.Args = Args
 module.exports = exports = Duct

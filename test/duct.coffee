@@ -374,7 +374,7 @@ describe '비동기 .async, .wait .promise', ()->
       expect(err).to.exist
       done()
 
-  it 'when .async & .promise, then read value from stroage', (done)->
+  it 'when .promise, then read value from stroage', (done)->
 
     chain = duct()
       .feedbackExeContext()
@@ -395,8 +395,27 @@ describe '비동기 .async, .wait .promise', ()->
       expect(execute_context.curArgs.get(0)).to.be.eql 'resolve_return'
       done()
 
+  it 'when .pwait, then read value from stroage', (done)->
 
-  it 'when .async & .promise but occur Error, then callback get error', (done)->
+    chain = duct()
+      .feedbackExeContext()
+      .map (cur)-> 0
+      .pwait 'test', (cur)->
+        new Promise (resolve, reject)->
+          _dfn = ()->
+            resolve 'resolve_return'
+          setTimeout _dfn, 50
+      .map (cur)->
+        {test} = @recall()
+        expect(test).to.be.eql 'resolve_return'
+        return test
+
+    chain null, (err, execute_context)->
+      expect(err).to.not.exist
+      expect(execute_context.curArgs.get(0)).to.be.eql 'resolve_return'
+      done()
+
+  it 'when .promise but occur Error, then callback get error', (done)->
 
     chain = duct()
       .map (cur)-> 0
