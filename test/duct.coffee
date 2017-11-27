@@ -582,6 +582,20 @@ describe 'invokes', ()->
 
     _reject new Error 'JUST'
 
+  it 'maintain scope', (done)->
+    act = duct()
+      .do ()->
+        console.log '.do'
+        expect(@scope).be.eql a
+        expect(@scope.fn).be.a 'function'
+      .finally (err)->
+        done err
+    class A
+      fn: ()->
+      act: act
+    a = new A
+    a.act()
+
 
 
 

@@ -113,7 +113,7 @@ createExecuteContext = (internal_fns, _callback)->
     remembers: (obj)->
       for own name, value of obj
         _KV_[name] = value
-    
+
     createSynchronizePoint :(name_at_group)->
       _resolve = _reject = null
       p = new Promise (resolve, reject)->
@@ -321,7 +321,7 @@ applyDuctBuilder = (duct)->
     return duct
 
 applyInvokeFn = (duct)->
-  duct.invoke = (inputs...)->
+  duct.invoke = (scope, inputs...)->
     _callback = undefined
     if _.isFunction _.last inputs
       _callback = inputs.pop()
@@ -329,8 +329,7 @@ applyInvokeFn = (duct)->
       # _callback = undefined
 
     exe_ctx = createExecuteContext duct._internal_fns, _callback
-    # _ASAP ()->
-    #   # exe_ctx.resume()
+    exe_ctx.scope = scope
     exe_ctx.inputs = inputs
     exe_ctx.next new Args inputs...
     return exe_ctx
@@ -340,16 +339,16 @@ applyInvokeFn = (duct)->
 
     exe_ctx.error = err
     # debug 'throwIn', exe_ctx
-    # _ASAP ()->
-    exe_ctx.resume()
+    _ASAP ()->
+      exe_ctx.resume()
     return exe_ctx
 
   duct.invokeByEvent = (src_obj, event_name)->
     src_obj.on event_name, (args...)->
-      duct.invoke args...
+      duct.invoke this, args...
     return duct
   duct.invokeByPromise = (promise)->
-    _ok = (value)-> duct.invoke value
+    _ok = (value)-> duct.invoke this, value
     _fail = (err)->
       duct.throwIn err
     promise.then _ok, _fail
@@ -357,7 +356,7 @@ applyInvokeFn = (duct)->
 
 Duct = ()->
   duct = (inputs...)->
-    duct.invoke inputs...
+    duct.invoke this,inputs...
 
   applyInvokeFn duct
   applyDuctBuilder duct
