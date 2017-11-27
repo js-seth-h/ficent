@@ -160,7 +160,7 @@ class RefKnot
       .await "data", (done)->
         debug 'call puller'
         self.puller self, done
-      .load "data"
+      .restore "data"
       .await (data, done)->
         debug 'call outter'
         self.outer data, done

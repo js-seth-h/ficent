@@ -10,7 +10,7 @@ scenario = it
 Features와, 테스트 시나리오
 
   함수일것 = 호출이 가능할것.
-  값제어 .do .map .load .store
+  값제어 .do .map .restore .store
   처리 제어.filter
   비동기 .async .await .promise .wait
   에러 제어 .catch .finally
@@ -260,7 +260,7 @@ describe 'error handling;', ()->
       # expect(execute_context.exit_status).to.be.equal 'filtered'
       done()
 
-describe 'when call .load .store;', ()->
+describe 'when call .restore .store;', ()->
 
   it 'basic var control possible', (done)->
 
@@ -269,10 +269,10 @@ describe 'when call .load .store;', ()->
       .store 'var'
       .do (args...)->
         expect(args).have.lengthOf 0
-      .load 'var'
+      .restore 'var'
       .do (var_val)->
         expect(var_val).be.eql 'test'
-      .load()
+      .restore()
       .do (obj)->
         expect(obj).be.eql {var: 'test', 'var[]': ['test']}
       .finally done
@@ -290,13 +290,13 @@ describe '비동기 .async, .wait .promise', ()->
       .map (cur)-> 2
       .wait 'test'
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err, execute_context)->
       expect(err).to.not.exist
       expect(execute_context.curArgs.get(0)).to.be.eql 'async_return'
-      expect(execute_context.recall('test[]')).to.be.eql ['async_return']
+      expect(execute_context.restore('test[]')).to.be.eql ['async_return']
       done()
 
   it 'when .await, then read value from stroage', (done)->
@@ -309,13 +309,13 @@ describe '비동기 .async, .wait .promise', ()->
           a_done null, 'async_return'
         setTimeout _dfn, 50
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err, execute_context)->
       expect(err).to.not.exist
       expect(execute_context.curArgs.get(0)).to.be.eql 'async_return'
-      expect(execute_context.recall('test[]')).to.be.eql ['async_return']
+      expect(execute_context.restore('test[]')).to.be.eql ['async_return']
       done()
 
 
@@ -329,7 +329,7 @@ describe '비동기 .async, .wait .promise', ()->
         setTimeout _dfn, 50
       .map (cur)->
         done new Error 'Never Come Here'
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err)->
@@ -345,14 +345,14 @@ describe '비동기 .async, .wait .promise', ()->
           a_done null, 'async_return'
         setTimeout _dfn, 50
       .map (cur)->
-        return @recall()["2"]
+        return @restore()["2"]
 
     chain null, (err, execute_context)->
       expect(err).to.not.exist
       # console.log 'execute_context', execute_context
-      # console.log 'execute_context.recall', execute_context.recall()
+      # console.log 'execute_context.restore', execute_context.restore()
       expect(execute_context.curArgs.get(0)).to.be.eql 'async_return'
-      expect(execute_context.recall('2[]')).to.be.eql ['async_return']
+      expect(execute_context.restore('2[]')).to.be.eql ['async_return']
       done()
 
   it 'when .async & .wait but occur Error, then callback get error', (done)->
@@ -367,7 +367,7 @@ describe '비동기 .async, .wait .promise', ()->
         return 2
       .wait 'test'
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err)->
@@ -387,7 +387,7 @@ describe '비동기 .async, .wait .promise', ()->
       .map (cur)-> 2
       .wait 'test'
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err, execute_context)->
@@ -406,7 +406,7 @@ describe '비동기 .async, .wait .promise', ()->
             resolve 'resolve_return'
           setTimeout _dfn, 50
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         expect(test).to.be.eql 'resolve_return'
         return test
 
@@ -427,7 +427,7 @@ describe '비동기 .async, .wait .promise', ()->
       .map (cur)-> 2
       .wait 'test'
       .map (cur)->
-        {test} = @recall()
+        {test} = @restore()
         return test
 
     chain null, (err, feedback, execute_context)->
