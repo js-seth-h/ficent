@@ -83,16 +83,16 @@ describe 'ListKnot.parallel', ()->
     box = new ListKnot()
       .pushAll [0...10]
       .parallel()
-
-    box.handler
-      .map (cur)-> cur * cur
-      .feedback (feedback, cur)-> 
-        result.push cur
-
-    box.pullOut (err, ListKnot)->
-      resut = result.sort (a,b)->  a - b 
-      expect(resut ).be.eql [0...10].map (x)-> x * x
-      done() 
+      .buildHandler (hdler)-> 
+        hdler
+          .map (cur)-> cur * cur
+          .feedback (feedback, cur)-> 
+            result.push cur
+            
+      .pullOut (err, ListKnot)->
+        resut = result.sort (a,b)->  a - b 
+        expect(resut ).be.eql [0...10].map (x)-> x * x
+        done() 
 
 describe 'ListKnot.serial', ()->
   it 'when start and callbacked, then result serialed', (done)->

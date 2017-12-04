@@ -176,6 +176,9 @@ class RefKnot
     return this
   setDataHandler: (@handler)->
     return this
+  buildHandler: (fn)->
+    fn @handler  
+    return this
   doHandling: (data, callback)->
     @handler data, callback
     return this 
