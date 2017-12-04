@@ -111,11 +111,13 @@ createExecuteContext = (internal_fns, _callback)->
 
     # remember: (name, value)->
     #   _KV_[name] = value
-    storeOne: (name, value)->
+    storeVal: (name, value)->
       _KV_[name] = value
-    store: (obj)->
+
+    storeObject: (obj)->
       for own name, value of obj
         _KV_[name] = value
+    storeObj: (obj)-> @storeObject obj
 
     createSynchronizePoint :(name_at_group)->
       _resolve = _reject = null
@@ -129,8 +131,8 @@ createExecuteContext = (internal_fns, _callback)->
         return _reject err if err
         value = args[0]
         _resolve value
-        exe_ctx.storeOne name, value
-        exe_ctx.storeOne name + '[]', args
+        exe_ctx.storeVal name, value
+        exe_ctx.storeVal name + '[]', args
       _done.catch = (fn)->
         return (err, args...)->
           return _done err if err
@@ -157,7 +159,7 @@ createExecuteContext = (internal_fns, _callback)->
         exe_ctx.promises[group].push promise
 
       promise.then (value)->
-        exe_ctx.storeOne name, value
+        exe_ctx.storeVal name, value
       , ()-> # prevent node worning. error handled after .wait()
 
 
@@ -180,30 +182,30 @@ applyDuctBuilder = (duct)->
   duct.store = (var_names...)->
     duct._internal_fns.push (exe_ctx)->
       for var_name, inx in var_names
-        exe_ctx.storeOne var_name, exe_ctx.curArgs.get inx
-      exe_ctx.storeOne var_names[0] + "[]", exe_ctx.curArgs.args
+        exe_ctx.storeVal var_name, exe_ctx.curArgs.get inx
+      exe_ctx.storeVal var_names[0] + "[]", exe_ctx.curArgs.args
       exe_ctx.next new Args()
     return duct
 
+  duct.storeObj =
   duct.storeObject = (obj)->
     duct._internal_fns.push (exe_ctx)->
       obj = obj or exe_ctx.curArgs.args[0] or {}
       for own var_name, value of obj
-        exe_ctx.storeOne var_name, value
+        exe_ctx.storeVal var_name, value
       exe_ctx.next new Args()
     return duct
 
-  duct.storeOne =
-  duct.storeFix = (var_name, init)->
+  duct.storeVal = (var_name, init)->
     duct._internal_fns.push (exe_ctx)->
-      exe_ctx.storeOne var_name, init
+      exe_ctx.storeVal var_name, init
       exe_ctx.next new Args()
     return duct
 
   duct.storeMap = (var_name, fn)->
     duct._internal_fns.push (exe_ctx)->
       result = fn.call exe_ctx, exe_ctx.curArgs.args...
-      exe_ctx.storeOne var_name, result
+      exe_ctx.storeVal var_name, result
       exe_ctx.next new Args()
     return duct
 
