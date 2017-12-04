@@ -185,6 +185,15 @@ applyDuctBuilder = (duct)->
       exe_ctx.next new Args()
     return duct
 
+  duct.storeObject = (obj)->
+    duct._internal_fns.push (exe_ctx)->
+      obj = obj or exe_ctx.curArgs.args[0] or {}
+      for own var_name, value of obj
+        exe_ctx.storeOne var_name, value
+      exe_ctx.next new Args()
+    return duct
+
+  duct.storeOne =
   duct.storeFix = (var_name, init)->
     duct._internal_fns.push (exe_ctx)->
       exe_ctx.storeOne var_name, init

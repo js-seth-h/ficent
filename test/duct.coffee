@@ -277,6 +277,24 @@ describe 'when call .restore .store;', ()->
         expect(obj).be.eql {var: 'test', 'var[]': ['test']}
       .finally done
 
+  it '.storeObject', (done)->
+
+    _fn = duct()
+      .storeObject()
+      .storeObject
+        real: '레알'
+
+      .do ()->
+        vals = @restore()
+        expect(vals).be.include
+          real: '레알'
+          apple: '사과'
+          ship: '배'
+
+      .finally done
+    _fn
+      apple: '사과'
+      ship: '배'
 describe '비동기 .async, .wait .promise', ()->
   it 'when .async & .wait, then read value from stroage', (done)->
 
