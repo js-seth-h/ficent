@@ -182,20 +182,20 @@ applyDuctBuilder = (duct)->
       for var_name, inx in var_names
         exe_ctx.storeOne var_name, exe_ctx.curArgs.get inx
       exe_ctx.storeOne var_names[0] + "[]", exe_ctx.curArgs.args
-      exe_ctx.resume()
+      exe_ctx.next new Args()
     return duct
 
   duct.storeFix = (var_name, init)->
     duct._internal_fns.push (exe_ctx)->
       exe_ctx.storeOne var_name, init
-      exe_ctx.resume()
+      exe_ctx.next new Args()
     return duct
 
   duct.storeMap = (var_name, fn)->
     duct._internal_fns.push (exe_ctx)->
       result = fn.call exe_ctx, exe_ctx.curArgs.args...
       exe_ctx.storeOne var_name, result
-      exe_ctx.resume()
+      exe_ctx.next new Args()
     return duct
 
   duct.do = (fn)->
