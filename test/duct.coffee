@@ -295,6 +295,28 @@ describe 'when call .restore .store;', ()->
     _fn
       apple: '사과'
       ship: '배'
+
+  it '.storeObject not remain previous call ', (done)->
+
+    cnt = 0
+    _fn = duct()
+    .do ()->
+      obj = @restore()
+      # debug "obj=", obj
+      expect(obj).eql {}
+    .storeObject()
+    .do ()->
+      obj = @restore()
+      # debug "obj=", obj
+      if cnt is 0
+        expect(obj.a).eql 'john'
+      else
+        expect(obj.a).eql 'bob'
+      cnt++
+    _fn {a: 'john'}, (err)->
+      return done err if err
+      _fn {a: 'bob' }, (err)-> done err
+
 describe '비동기 .async, .wait .promise', ()->
   it 'when .async & .wait, then read value from stroage', (done)->
 

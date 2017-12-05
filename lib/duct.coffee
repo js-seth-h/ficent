@@ -188,9 +188,9 @@ applyDuctBuilder = (duct)->
     return duct
 
   duct.storeObj =
-  duct.storeObject = (obj)->
+  duct.storeObject = (given_obj)->
     duct._internal_fns.push (exe_ctx)->
-      obj = obj or exe_ctx.curArgs.args[0] or {}
+      obj = given_obj or exe_ctx.curArgs.args[0] or {}
       for own var_name, value of obj
         exe_ctx.storeVal var_name, value
       exe_ctx.next new Args()
