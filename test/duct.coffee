@@ -19,10 +19,15 @@ Features와, 테스트 시나리오
 
 ###
 describe 'chain is a function', ()->
-  it 'when create hyper-chain, then return a function', ()->
+  it 'when create hyper-chain, then return a function', (done)->
     chain = duct()
-    expect(chain).a 'function'
 
+    chain (err)->
+      console.log err if err
+      expect(err).to.not.exist
+      expect(chain).a 'function'
+      done()
+      
   it 'when call chain, then return feedback', (done)->
     chain = duct()
       .feedback (feedback, cur...)->

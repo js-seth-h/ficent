@@ -262,12 +262,13 @@ applyDuctBuilder = (duct)->
     timeout = null
     if _.isNumber args[0]
       timeout = args.shift()
+      errT = new Error "timeout" # HACK for error stack
     duct._internal_fns.push (exe_ctx)->
       p = new Promise (resolve, reject)->
         task_promise = exe_ctx.getMergedPromise args...
         task_promise.then resolve, reject
         if timeout
-          _dfn = ()-> reject new Error "timeout"
+          _dfn = ()-> reject errT
           setTimeout _dfn, timeout
       _ok = (value)->
         exe_ctx.resume()

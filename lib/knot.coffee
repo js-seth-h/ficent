@@ -5,17 +5,17 @@ Semaphore = require './semaphore'
 
 debug = require('debug')('knot')
 
-### 
+###
 Knot는 프로그램 처리 흐름상의 결절이다.
 시작점이자 끝점으로 볼수있으며,
 상태를 확인할수 있다.
 내부 자료 타입에 따라서 3~4가지를 둔다.
 
-  RefKnot - 무엇인가를 참조함 
+  RefKnot - 무엇인가를 참조함
   ListKnot - 내부가 Array, .push가 가능
   DictionaryKnot - 내부가 Dictionary(=Object), .set 가능
   NumberKnot - 내부가 Number, .inc(.increase) 가능
-  
+
 Knot 공통. = RefKnot
   결절 내부 공간에 대한 Get/Set
   .getStatus
@@ -24,12 +24,12 @@ Knot 공통. = RefKnot
   특정 상황이 될때까지 대기 가능
   .wait = .waitOnce
     until: (knot)-> return false
-    then : (knot)-> 
+    then : (knot)->
 
   wait는 한번만 처리하고 when은 반복 수행
-  .when 
+  .when
     if: (knot)-> return false
-    then : (knot)-> 
+    then : (knot)->
 
   .manual : pullout을 그대로 호출함.
 
@@ -45,10 +45,10 @@ Knot 공통. = RefKnot
         pullOut이 처리되면 연속 호출
         처리할 데이터가 없으면? setTimeout
         최초의 시작은? 자동으로 함.
-  
+
   Puller 계열
     * 100% 커스텀.
-    
+
   Outer 계열
     * serial 순차 처리
     * parallel 전체 동시 병렬 처리
@@ -57,35 +57,35 @@ Knot 공통. = RefKnot
   Handler
     * 100% 커스텀.
 
-   
-ListKnot() 
-  .push 
-  
+
+ListKnot()
+  .push
+
   Puller 계열
     * all : 들어온 것을 그대로 내보냄
     * dequeue: 1개만 꺼냄
     * latest: 다 버리고 가장 마지막 것
     * reduce(init_acc, acc_fn): 리듀싱 함수 호출
 
-DictionaryKnot 
-  .set(path, value) 
+DictionaryKnot
+  .set(path, value)
   .get(path)
   Puller 계열
     * pairs : 모든 키,값의 쌍 [k,v]
     * pairObject: 모든 {key: 키값, value: 값} 구조
     * keys: 모든 Key만
     * values: 모든 value만
-    * reduce(init_acc, acc_fn)  
-  
-  
-    
-NumKnot 
-  .inc 
-  
+    * reduce(init_acc, acc_fn)
+
+
+
+NumKnot
+  .inc
+
   Puller
     * current : 현재 값 읽기
-    
- 
+
+
 대량 처리시의 문제.
 이때는 puts로 전부 넣기가 무리고,
 스트림처리식도 부족함. 동기화가 안되서, 막 밀어넣고 전부 버퍼링 되게됨.
@@ -97,13 +97,13 @@ BackPressure 개념뿐인데..
 knot = RefKnot()
   .setStatus MongoCursor
   .backPressure()
-  # .noPuller() 
+  # .noPuller()
   # .serial() / .parallel()
-  
+
 knot.puller.do (self)-> [ self.getStatus().next()  ]
 knot.handler.do (data)-> ....
   .await (data, done)-> ...
-  
+
 
 
 ###
@@ -124,36 +124,36 @@ class RefKnot
     @reset()
     @serial()
   reset: ()->
-    @reactivity = duct() 
+    @reactivity = duct()
     @puller = duct() # 데이터 추출 루틴
     @outer = duct() # 방출 제어 루틴.
-    @handler = duct() # 개별 방출 핸들러 
-    
+    @handler = duct() # 개별 방출 핸들러
+
   getStatus: ()-> @status
-  setStatus: (@status)-> 
+  setStatus: (@status)->
     @_trigging()
-  
-  
+
+
   _trigging: ()->
     self = this
-  
+
     debug 'check _trigging', @_triggers, @constructor.name
-    @_triggers = _.filter @_triggers, (cfg)->      
-      debug 'call cfg.if', cfg.if 
+    @_triggers = _.filter @_triggers, (cfg)->
+      debug 'call cfg.if', cfg.if
       if cfg.if self
         _ASAP ()-> cfg.then self
         return false if cfg.once is true
-      return true 
-          
+      return true
+
   wait: (wait_cfg)->
     wait_cfg.if = wait_cfg.until unless wait_cfg.if
     wait_cfg.once = true
     @_triggers.push wait_cfg
 
-  when: (when_cfg)->        
+  when: (when_cfg)->
     @_triggers.push when_cfg
-  
-    
+
+
   pullOut: (callback)->
     self = this
     _fn = duct()
@@ -169,7 +169,7 @@ class RefKnot
         self.reactivity 'after-pullout', data
     _fn (err)->
       if callback
-        callback err, self 
+        callback err, self
     return this
 
   setHandler: (@handler)->
@@ -177,18 +177,18 @@ class RefKnot
   setDataHandler: (@handler)->
     return this
   buildHandler: (fn)->
-    fn @handler  
+    fn @handler
     return this
   doHandling: (data, callback)->
     @handler data, callback
-    return this 
-  
-  # auto reactivity 계열 
+    return this
+
+  # auto reactivity 계열
   noReact: ()->
     self = this
-    self.reactivity.clear() 
+    self.reactivity.clear()
     return self
-    
+
   consecution : ()->
     self = this
     self.reactivity.clear()
@@ -249,15 +249,15 @@ class RefKnot
           self.pullOut()
         self.tid = setTimeout _dfn, msec
     return self
-      
-  #outter 계열   
+
+  #outter 계열
   par : ()-> @parallel()
   parallel : ()->
     self = this
     self.outer.clear().await (data, done)->
-      _fn = duct() 
+      _fn = duct()
       _.forEach data, (datum, inx)->
-        _fn.async inx, (done)->
+        _fn.async (done)->
           self.doHandling datum, done
       _fn.wait()
       _fn done
@@ -267,9 +267,9 @@ class RefKnot
   serial : ()->
     self = this
     self.outer.clear().await (data, done)->
-      _fn = duct() 
+      _fn = duct()
       _.forEach data, (datum, inx)->
-        _fn.await inx, (done)->
+        _fn.await (done)->
           self.doHandling datum, done
       _fn done
     return self
@@ -279,9 +279,9 @@ class RefKnot
     self = this
     s = new Semaphore concurrent
     self.outer.clear().await (data, done)->
-      _fn = duct() 
+      _fn = duct()
       _.forEach data, (datum, inx)->
-        _fn.async inx, (done)->
+        _fn.async (done)->
           s.enter ()->
             self.doHandling datum, (err)->
               s.leave()
@@ -290,19 +290,19 @@ class RefKnot
       _fn done
     return self
 
-class ListKnot extends RefKnot 
+class ListKnot extends RefKnot
   constructor: ()->
     super()
     @setStatus []
     @all()
-    
+
   push: (args...)->
-    @getStatus().push args...  
+    @getStatus().push args...
     @reactivity("after-change")
     @_trigging()
     return this
   pushAll: (list)->
-    @getStatus().push list...  
+    @getStatus().push list...
     @reactivity("after-change")
     @_trigging()
     return this
@@ -328,35 +328,35 @@ class ListKnot extends RefKnot
       val = reduce_fn list
       @feedback.reset [val]
     return self
-    
-class DictionaryKnot extends RefKnot 
+
+class DictionaryKnot extends RefKnot
   constructor: ()->
     super()
-    @setStatus {} 
+    @setStatus {}
   set: (key, value)->
-    _.set(@getStatus(), key, value)    
+    _.set(@getStatus(), key, value)
     @reactivity("after-change")
     @_trigging()
   get: (key, value)->
     _.get(@getStatus(), key)
-    
-class NumKnot extends RefKnot 
+
+class NumKnot extends RefKnot
   constructor: ()->
     super()
-    @setStatus 0 
+    @setStatus 0
   inc: (diff = 1)->
     debug 'inc', diff
-    @setStatus @getStatus() + diff 
+    @setStatus @getStatus() + diff
   current: ()->
     self = this
     self.puller.clear().do (self)->
       val = self.getStatus()
       @feedback.reset [val]
     return self
-    
-    
-  
-module.exports = exports = 
+
+
+
+module.exports = exports =
   Ref : RefKnot
   List : ListKnot
   Num : NumKnot
