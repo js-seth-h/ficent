@@ -345,7 +345,7 @@ applyDuctBuilder = (duct)->
     return duct
 
 applyInvokeFn = (duct)->
-  duct.invoke = (scope, inputs...)->
+  duct.invoke = (thisArg, inputs...)->
     _callback = undefined
     if _.isFunction _.last inputs
       _callback = inputs.pop()
@@ -353,7 +353,9 @@ applyInvokeFn = (duct)->
       # _callback = undefined
 
     exe_ctx = createExecuteContext duct._internal_fns, _callback
-    exe_ctx.scope = scope
+    exe_ctx.thisArg = thisArg
+    if duct.this_arg_name
+      exe_ctx[duct.this_arg_name] = thisArg
     exe_ctx.inputs = inputs
     exe_ctx.next new Args inputs...
     return exe_ctx
@@ -378,12 +380,21 @@ applyInvokeFn = (duct)->
     promise.then _ok, _fail
     return duct
 
+
+applyMetabuilder = (duct)->
+  duct.this_arg_name = 'scope'
+  duct.thisArgName = (new_name)->
+    duct.this_arg_name = new_name
+    return duct
+
 Duct = ()->
   duct = (inputs...)->
     duct.invoke this,inputs...
 
   applyInvokeFn duct
   applyDuctBuilder duct
+  applyMetabuilder duct
+
   duct.clear()
   return duct
 

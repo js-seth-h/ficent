@@ -27,7 +27,7 @@ describe 'chain is a function', ()->
       expect(err).to.not.exist
       expect(chain).a 'function'
       done()
-      
+
   it 'when call chain, then return feedback', (done)->
     chain = duct()
       .feedback (feedback, cur...)->
@@ -627,12 +627,26 @@ describe 'invokes', ()->
 
     _reject new Error 'JUST'
 
-  it 'maintain scope', (done)->
+  it 'maintain thisArg', (done)->
     act = duct()
       .do ()->
         console.log '.do'
-        expect(@scope).be.eql a
-        expect(@scope.fn).be.a 'function'
+        expect(@thisArg).be.eql a
+        expect(@thisArg.fn).be.a 'function'
+      .finally (err)->
+        done err
+    class A
+      fn: ()->
+      act: act
+    a = new A
+    a.act()
+  it 'maintain thisArg, and renamed', (done)->
+    act = duct()
+      .thisArgName 'vm'
+      .do ()->
+        console.log '.do'
+        expect(@vm).be.eql a
+        expect(@vm.fn).be.a 'function'
       .finally (err)->
         done err
     class A
