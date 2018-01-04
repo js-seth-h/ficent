@@ -656,7 +656,34 @@ describe 'invokes', ()->
     a.act()
 
 
+describe 'metadata', ()->
+  it 'set props of fuction', (done)->
+    act = duct()
+      .props http: 'post, /api/test'
+      .storeThisArg 'vm'
+      .finally (err)->
+        done err
 
+    expect(act.http).eql 'post, /api/test'
+    done()
+  it 'un-nameed', (done)->
+    act = duct()
+      .storeThisArg 'vm'
+      .finally (err)->
+        done err
+
+    expect(act.name).eql 'not_named_duct'
+    done()
+
+  it 'set name', (done)->
+    act = duct 'test_function'
+      .storeThisArg 'vm'
+      # .do ()->
+      #   throw new Error 'J' #  콜스택 출력시 잘 나옴.
+
+    expect(act.name).eql 'test_function'
+
+    act done
 
 describe 'complex usage', ()->
   it 'run without args & callback, await take only callback function', (it_done)->

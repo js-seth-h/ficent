@@ -390,12 +390,23 @@ applyInvokeFn = (duct)->
 
 
 applyMetabuilder = (duct)->
+  duct._props = {}
+  duct.props = (obj)->
+    # if _.isObject name_or_obj
+      # duct._props = _.assign duct._props, name_or_obj
+    for own key, value of obj
+      Object.defineProperty duct, key, value: value
+    return duct
+    # unless name_or_obj
+    #   return duct._props
+    # return _.get duct._props, name_or_obj
+
   # duct.this_arg_name = 'scope'
   # duct.thisArgName = (new_name)->
   #   duct.this_arg_name = new_name
   #   return duct
 
-Duct = ()->
+Duct = (name = "not_named_duct")->
   duct = (inputs...)->
     duct.invoke this,inputs...
 
@@ -404,6 +415,7 @@ Duct = ()->
   applyMetabuilder duct
 
   duct.clear()
+  Object.defineProperty duct, 'name', value: name
   return duct
 
 Duct.Args = Args
