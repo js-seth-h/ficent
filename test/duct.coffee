@@ -642,7 +642,7 @@ describe 'invokes', ()->
     a.act()
   it 'maintain thisArg, and renamed', (done)->
     act = duct()
-      .thisArgName 'vm'
+      .storeThisArg 'vm'
       .do ()->
         console.log '.do'
         expect(@vm).be.eql a

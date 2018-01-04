@@ -19,7 +19,7 @@ class Args # TODO  1: 'test', 2: var 식의 처리 고안하자
 
 Args.Empty = new Args()
 createExecuteContext = (internal_fns, _callback)->
-  _KV_ = {}
+  storage = {}
 
   outCallback = (error, exit_status)->
     exe_ctx.exit_status = exit_status
@@ -106,17 +106,17 @@ createExecuteContext = (internal_fns, _callback)->
       p.then _ok, _fail
 
     restore: (name)->
-      return _KV_ unless name
-      return _KV_[name]
+      return storage unless name
+      return storage[name]
 
     # remember: (name, value)->
-    #   _KV_[name] = value
+    #   storage[name] = value
     storeVal: (name, value)->
-      _KV_[name] = value
+      storage[name] = value
 
     storeObject: (obj)->
       for own name, value of obj
-        _KV_[name] = value
+        storage[name] = value
     storeObj: (obj)-> @storeObject obj
 
     createSynchronizePoint :(name_at_group)->
@@ -193,21 +193,29 @@ applyDuctBuilder = (duct)->
       obj = given_obj or exe_ctx.curArgs.args[0] or {}
       for own var_name, value of obj
         exe_ctx.storeVal var_name, value
-      exe_ctx.next new Args()
+      exe_ctx.resume()
     return duct
 
   duct.storeVal = (var_name, init)->
     duct._internal_fns.push (exe_ctx)->
       exe_ctx.storeVal var_name, init
-      exe_ctx.next new Args()
+      exe_ctx.resume()
     return duct
 
   duct.storeMap = (var_name, fn)->
     duct._internal_fns.push (exe_ctx)->
       result = fn.call exe_ctx, exe_ctx.curArgs.args...
       exe_ctx.storeVal var_name, result
-      exe_ctx.next new Args()
+      exe_ctx.resume()
     return duct
+
+  duct.storeThisArg = (var_name)->
+    duct._internal_fns.push (exe_ctx)->
+      exe_ctx.storeVal var_name, exe_ctx.thisArg
+      exe_ctx[var_name] = exe_ctx.thisArg
+      exe_ctx.resume()
+    return duct
+
 
   duct.do = (fn)->
     duct._internal_fns.push (exe_ctx)->
@@ -354,8 +362,8 @@ applyInvokeFn = (duct)->
 
     exe_ctx = createExecuteContext duct._internal_fns, _callback
     exe_ctx.thisArg = thisArg
-    if duct.this_arg_name
-      exe_ctx[duct.this_arg_name] = thisArg
+    # if duct.this_arg_name
+    #   exe_ctx[duct.this_arg_name] = thisArg
     exe_ctx.inputs = inputs
     exe_ctx.next new Args inputs...
     return exe_ctx
@@ -382,10 +390,10 @@ applyInvokeFn = (duct)->
 
 
 applyMetabuilder = (duct)->
-  duct.this_arg_name = 'scope'
-  duct.thisArgName = (new_name)->
-    duct.this_arg_name = new_name
-    return duct
+  # duct.this_arg_name = 'scope'
+  # duct.thisArgName = (new_name)->
+  #   duct.this_arg_name = new_name
+  #   return duct
 
 Duct = ()->
   duct = (inputs...)->
