@@ -10,7 +10,7 @@ scenario = it
 Features와, 테스트 시나리오
 
   함수일것 = 호출이 가능할것.
-  값제어 .do .map .restore .store
+  값제어 .do .map .restoreArgs .store
   처리 제어.filter
   비동기 .async .await .promise .wait
   에러 제어 .catch .finally
@@ -265,27 +265,28 @@ describe 'error handling;', ()->
       # expect(execute_context.exit_status).to.be.equal 'filtered'
       done()
 
-describe 'when call .restore .store;', ()->
+describe 'when call .restoreArgs .store;', ()->
 
   it 'basic var control possible', (done)->
 
     do duct()
       .map ()-> 'test'
-      .store 'var'
+      .storeArgs 'var'
       .do (args...)->
+        debug 'restore', @restore()
         expect(args).have.lengthOf 0
-      .restore 'var'
+      .restoreArgs 'var'
       .do (var_val)->
         expect(var_val).be.eql 'test'
-      .restore()
+      .restoreArgs()
       .do (obj)->
-        expect(obj).be.eql {var: 'test', 'var[]': ['test']}
+        expect(obj).be.include {var: 'test' }
       .finally done
 
   it '.storeObject', (done)->
 
     _fn = duct()
-      .storeObject()
+      .storeArgs()
       .storeObject
         real: '레알'
 
@@ -309,7 +310,7 @@ describe 'when call .restore .store;', ()->
       obj = @restore()
       # debug "obj=", obj
       expect(obj).eql {}
-    .storeObject()
+    .storeArgs()
     .do ()->
       obj = @restore()
       # debug "obj=", obj

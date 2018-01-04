@@ -117,7 +117,7 @@ createExecuteContext = (internal_fns, _callback)->
     storeObject: (obj)->
       for own name, value of obj
         storage[name] = value
-    storeObj: (obj)-> @storeObject obj
+    # storeObj: (obj)-> @storeObject obj
 
     createSynchronizePoint :(name_at_group)->
       _resolve = _reject = null
@@ -169,38 +169,42 @@ applyDuctBuilder = (duct)->
   duct.clear = ()->
     duct._internal_fns = []
     return duct
-  duct.restore = (var_names...)->
+  duct.restoreArgs = (var_names...)->
     duct._internal_fns.push (exe_ctx)->
       values = exe_ctx.restore()
-      if var_names.length > 0
+      if var_names.length isnt 0
         args = _.map var_names, (v)-> values[v]
       else
-        args= [values]
+        args = [ values ]
       exe_ctx.next new Args args...
     return duct
 
-  duct.store = (var_names...)->
+  duct.storeArgs = (var_names...)->
     duct._internal_fns.push (exe_ctx)->
-      for var_name, inx in var_names
-        exe_ctx.storeVal var_name, exe_ctx.curArgs.get inx
-      exe_ctx.storeVal var_names[0] + "[]", exe_ctx.curArgs.args
-      exe_ctx.next new Args()
+      if var_names.length is 0
+        obj =  exe_ctx.curArgs.args[0] or {}
+        for own var_name, value of obj
+          exe_ctx.storeVal var_name, value
+        return exe_ctx.next new Args()
+      else
+        for var_name, inx in var_names
+          exe_ctx.storeVal var_name, exe_ctx.curArgs.get inx
+        return exe_ctx.next new Args()
     return duct
 
-  duct.storeObj =
+  # duct.storeObj =
   duct.storeObject = (given_obj)->
     duct._internal_fns.push (exe_ctx)->
-      obj = given_obj or exe_ctx.curArgs.args[0] or {}
-      for own var_name, value of obj
+      for own var_name, value of given_obj
         exe_ctx.storeVal var_name, value
-      exe_ctx.resume()
+      return exe_ctx.resume()
     return duct
 
-  duct.storeVal = (var_name, init)->
-    duct._internal_fns.push (exe_ctx)->
-      exe_ctx.storeVal var_name, init
-      exe_ctx.resume()
-    return duct
+  # duct.storeVal = (var_name, init)->
+  #   duct._internal_fns.push (exe_ctx)->
+  #     exe_ctx.storeVal var_name, init
+  #     exe_ctx.resume()
+  #   return duct
 
   duct.storeMap = (var_name, fn)->
     duct._internal_fns.push (exe_ctx)->

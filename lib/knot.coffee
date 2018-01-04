@@ -160,7 +160,7 @@ class RefKnot
       .await "data", (done)->
         debug 'call puller'
         self.puller self, done
-      .restore "data"
+      .restoreArgs "data"
       .await (data, done)->
         debug 'call outter'
         self.outer data, done
@@ -273,7 +273,7 @@ class RefKnot
           self.doHandling datum, done
       _fn done
     return self
- 
+
   nPar : (concurrent)-> @nParallel concurrent
   nParallel : (concurrent)->
     self = this
