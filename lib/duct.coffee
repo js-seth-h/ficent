@@ -88,6 +88,8 @@ createExecuteContext = (internal_fns, _callback)->
 
     # evacuation 함수 실행을 중지하고 반환처리
     evac: (args...)->
+      @terminate args...
+    terminate: (args...)->
       # 배열반환은 필요없다. HC()는 함수 취급임으로 항상 단일 값 반환
       # args 길이를 확인하기 위해서 처리.
 
