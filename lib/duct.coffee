@@ -2,6 +2,7 @@ debug =  require('debug')('duct')
 
 _ = require 'lodash'
 
+MOD_OPT = require './option'
 
 _ASAP = (fn)-> setTimeout fn, 0
 if process?.nextTick?
@@ -18,12 +19,13 @@ class Args # TODO  1: 'test', 2: var 식의 처리 고안하자
     @args.length
 
 Args.Empty = new Args()
-createExecuteContext = (internal_fns, _callback)->
+createExecuteContext = (duct_def, _callback)->
+  internal_fns = duct_def._internal_fns
   storage = {}
 
   outCallback = (error, exit_status)->
     exe_ctx.exit_status = exit_status
-    exe_ctx.error = error
+    exe_ctx.setError error
     _ASAP ()-> # 만약 외부 콜백에 문제가 있더라도 내부 프로세스를 타면 안됨
       if exe_ctx.callbacked
         console.error 'duct(); duplicated callback'
@@ -36,6 +38,13 @@ createExecuteContext = (internal_fns, _callback)->
         console.error 'duct(); Error:', exe_ctx.error
   return exe_ctx =
     error: null
+    setError : (err)->
+      # console.log 'setError', duct_def.__fileline
+      if err
+        if duct_def.__fileline and err.__duct_fineline isnt true
+          err.__duct_fineline = true
+          err.message += " - in "+ duct_def.__fileline
+      exe_ctx.error = err
     callback_fn : _callback
     callbacked : false
     curArgs: new Args
@@ -82,7 +91,7 @@ createExecuteContext = (internal_fns, _callback)->
         debug 'resume -> call', exe_ctx.step_inx #, 'with', exe_ctx
         _fn(exe_ctx)
       catch err
-        exe_ctx.error = err
+        exe_ctx.setError err
         debug 'resume -> catch error', exe_ctx.step_inx, err.toString()
         exe_ctx.resume()
 
@@ -293,7 +302,7 @@ applyDuctBuilder = (duct)->
       _ok = (value)->
         exe_ctx.resume()
       _fail = (err)->
-        exe_ctx.error = err
+        exe_ctx.setError err
         exe_ctx.resume()
       p.then _ok, _fail
     return duct
@@ -372,7 +381,7 @@ applyInvokeFn = (duct)->
       # inputs.push _callback
       # _callback = undefined
 
-    exe_ctx = createExecuteContext duct._internal_fns, _callback
+    exe_ctx = createExecuteContext duct, _callback
     exe_ctx.thisArg = thisArg
     # if duct.this_arg_name
     #   exe_ctx[duct.this_arg_name] = thisArg
@@ -381,9 +390,9 @@ applyInvokeFn = (duct)->
     return exe_ctx
 
   duct.throwIn = (err)->
-    exe_ctx = createExecuteContext duct._internal_fns
+    exe_ctx = createExecuteContext duct
 
-    exe_ctx.error = err
+    exe_ctx.setError err
     # debug 'throwIn', exe_ctx
     _ASAP ()->
       exe_ctx.resume()
@@ -419,6 +428,7 @@ applyMetabuilder = (duct)->
   #   return duct
 
 Duct = (name = "not_named_duct")->
+
   duct = (inputs...)->
     duct.invoke this,inputs...
 
@@ -428,6 +438,14 @@ Duct = (name = "not_named_duct")->
 
   duct.clear()
   Object.defineProperty duct, 'name', value: name
+  # console.log 'MOD_OPT.help_debug', MOD_OPT.help_debug
+  if MOD_OPT.help_debug
+    e = new Error('trace for duct')
+    # console.log _.split(e.stack, /[\r\n]+/)
+    traced = _.trim _.split(e.stack, /[\r\n]+/)[2]
+    m = /\((.+)\)/.exec traced
+    duct.__fileline = m[1]
+    # console.log 'duct.__fileline', duct.__fileline
   return duct
 
 Duct.Args = Args

@@ -197,6 +197,7 @@ describe 'error handling;', ()->
         throw err
 
     chain 0, (err, execute_context)->
+      console.log err
       expect(err).to.exist
       expect(execute_context.curArgs.get(0)).to.be.equal 1
       # expect(execute_context.exit_status).to.be.equal 'filtered'
@@ -213,7 +214,7 @@ describe 'error handling;', ()->
 
     chain 0, (err, execute_context)->
       expect(err).to.exist
-      expect(err.toString()).to.equal 'Error: Other Error'
+      expect(err.toString()).to.include 'Error: Other Error'
       expect(execute_context.curArgs.get(0)).to.be.equal 1
       # expect(execute_context.exit_status).to.be.equal 'filtered'
       done()
@@ -230,7 +231,7 @@ describe 'error handling;', ()->
 
     chain 0, (err, execute_context)->
       expect(err).to.exist
-      expect(err.toString()).to.equal 'Error: Just'
+      expect(err.toString()).to.include 'Error: Just'
       expect(execute_context.curArgs.get(0)).to.be.equal 1
       # expect(execute_context.exit_status).to.be.equal 'filtered'
       done()
@@ -692,7 +693,7 @@ describe 'complex usage', ()->
       .do ()->
         return 'test'
       .await "log", (done)->
-        console.log 'awit', arguments
+        # console.log 'awit', arguments
         expect(done).to.be.a('function')
         done()
       .do ()->
