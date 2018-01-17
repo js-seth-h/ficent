@@ -1,6 +1,6 @@
 {
   "name": "ficent",
-  "version": "4.0.14",
+  "version": "4.0.15",
   "description": "",
   "main": "index",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/js-seth-h/ficent",
   "dependencies": {
-    "debug": "^2",
+    "debug": "^3",
     "lodash": "^4.17.4"
   },
   "devDependencies": {

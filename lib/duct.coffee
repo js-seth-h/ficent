@@ -25,13 +25,19 @@ createExecuteContext = (internal_fns, _callback)->
     exe_ctx.exit_status = exit_status
     exe_ctx.error = error
     _ASAP ()-> # 만약 외부 콜백에 문제가 있더라도 내부 프로세스를 타면 안됨
-      return unless _callback
-      [cb, _callback] = [_callback, null]
-      debug 'outcallback', exe_ctx.error, exe_ctx.feedback, exe_ctx
-      cb exe_ctx.error, exe_ctx.feedback.args...
-
+      if exe_ctx.callbacked
+        console.error 'duct(); duplicated callback'
+        return
+      exe_ctx.callbacked = true
+      debug 'outcallback', exe_ctx.error, exe_ctx.feedback
+      if exe_ctx.callback_fn
+        exe_ctx.callback_fn exe_ctx.error, exe_ctx.feedback.args...
+      else if exe_ctx.error
+        console.error 'duct(); Error:', exe_ctx.error
   return exe_ctx =
     error: null
+    callback_fn : _callback
+    callbacked : false
     curArgs: new Args
     feedback: new Args
     step_inx: -1
