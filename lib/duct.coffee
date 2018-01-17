@@ -444,7 +444,11 @@ Duct = (name = "not_named_duct")->
     # console.log _.split(e.stack, /[\r\n]+/)
     traced = _.trim _.split(e.stack, /[\r\n]+/)[2]
     m = /\((.+)\)/.exec traced
-    duct.__fileline = m[1]
+    if m
+      fileline = m[1]
+    else
+      fileline = traced
+    duct.__fileline = fileline
     # console.log 'duct.__fileline', duct.__fileline
   return duct
 
